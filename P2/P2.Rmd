@@ -158,9 +158,153 @@ levelplot(Q_per, col.regions = coul, main = "Permuted precision matrix")
 levelplot(LQ_per, col.regions = coul, main = "Permuted lower triangular precision matrix")
 ```
 
-# Part II
+# Part II Gaussian random fields and Kriging
+
+The purpose of this computer exercise is to give an introduction to parameter estima- tion and kriging for Gaussian random field models for spatial data.
+
+We assume the following observation model on the unit square:
+
+\begin{equation*}
+    y(\boldsymbol{s}_j) = x(\boldsymbol{s}_j) + \epsilon_j, \ \ \  j = 1, \dots, N,
+\end{equation*}
+
+where $\epsilon_j ~ \mathop{N}(0, \tau^2)$ are independent measurement noise terms. Further, consider a Matérn covariance function for the Gaussian random field $\boldsymbol{x(s)}$:
+
+\begin{equation*}
+    Cov(x(\boldsymbol{s}_i), x(\boldsymbol{s}_j)) = \Sigma_{i, j} = \sigma^2(1 + \phi h)\exp(-\phi h),
+\end{equation*}
+
+where $h$ denotes the Euclidean distance between the two sites $\boldsymbol{s}_i$ and $\boldsymbol{s}_j$.
+
+We assume the mean increases with east and north coordinates as follows: \mu_j = \alpha((s_{j1} - 0.5) + (s_{j2} - 0.5)), for site $\boldsymbol{s}_j = (s_{j1}, s_{j2})$ on the unit square. 
+
+*** 
+
+## 2.1 Simulation
+
+Simulate N = 200 random sites in the unit square and plot them. Form the covari- 222
+ance matrix using σ = 1, φ = 10 and τ = 0.05 . Take its Cholesky decomposition and simulate dependent zero-mean Gaussian data variables, then add the mean using α = 1. Plot your observations.
+
+```{r, GP simulation}
+Matern_cov <- function(sigma, phi, t){
+    # param sigma: scaling coef
+    # param eta: range coef
+    # param t: distance matrix
+    # return: matern covariance
+    return(sigma ^ 2 * (1 + phi * t) * exp(-phi * t))
+}
 
 
+# Setup the grid
+n1 = 25 # number of grid points along east direction
+n2 = 25 # number of grid points along north direction
+n = n1 * n2 # total number of grid points
 
+dn1 = 1/n1
+dn2 = 1/n2
+sites1 = array((1:n1), c(n1, 1))
+sites2 = array((1:n2), c(n2, 1))
+ww1 = rep(1, n1)
+ww2 = rep(1, n2)
+sites1m = sites1 %*% t(ww1) # sites1m is the matrix version of sites1
+sites2m = ww2 %*% t(sites2)
+
+sites1v = matrix(sites1m, nrow = n, ncol = 1)
+sites2v = matrix(sites2m, nrow = n, ncol = 1)
+
+plot(sites1v, sites2v)
+
+
+# Compute the distance matrix
+ddE = sites1v %*% matrix(rep(1, n), nrow = 1, ncol = n) - matrix(rep(1, n), nrow = n, ncol = 1) %*% t(sites1v)
+dd2E = ddE * ddE
+ddN = sites2v %*% matrix(rep(1, n), nrow = 1, ncol = n) - matrix(rep(1, n), nrow = n, ncol = 1) %*% t(sites2v)
+dd2N = ddN * ddN
+t = sqrt(dd2E + dd2N)
+image(t, main = "distance matrix")
+
+# Simulate the initial random field
+alpha = 1.0 # beta as in regression model
+sigma = 1.0  # scaling coef in matern kernel
+phi = 10 # range coef in matern kernel
+# eta = 10 # range coef in matern kernel
+tau = .05 # iid noise
+
+beta1 = -alpha
+beta2 = alpha
+beta3 = alpha
+
+BETA_TRUE = matrix(c(beta1, beta2, beta3), nrow = 3, ncol = 1)
+THETA_TRUE = matrix(c(sigma, phi, tau), nrow = 3, ncol = 1)
+
+Sigma = Matern_cov(sigma, phi, t)  # matern covariance
+image(Sigma, main = "matern cov")
+
+L = np.linalg.cholesky(Sigma)  # lower t    riangle matrix
+# L = np.linalg.cholesky(C_theta)  # lower triangle matrix
+
+x = np.dot(L, np.random.randn(n).reshape(-1, 1))
+H = design_matrix(sites1v, sites2v) # different notation for the project
+mu_prior = mu(H, BETA_TRUE).reshape(n, 1)
+plotf(np.copy(mu_prior).reshape(n1, n2), "prior mean")
+mu_real = mu_prior + x  # add covariance
+plotf(np.copy(mu_real).reshape(n1, n2), "realisation of grf")
+
+# sampling from realisations
+M = 200
+F, ind = sampling_design(n, M)
+G = np.dot(F, H)
+y_sampled = np.dot(F, mu_real) + tau * np.random.randn(M).reshape(-1, 1)
+x_ind, y_ind = np.unravel_index(ind, (n1, n2))
+
+# print(ind)
+# print(x_ind)
+# print(y_ind)
+x_ind = sites1[x_ind]
+y_ind = sites2[y_ind]
+
+plt.figure()
+plt.scatter(x_ind, y_ind, 100 * abs(y_sampled), facecolors='none', edgecolors='k')
+# y_sampled times 10 for scaling in the plot
+# abs() added here to make the scatter plot work properly
+plt.title("random sample, circle size indicates true mean value")
+plt.show()
+
+```
+
+***
+
+## 2.2 Paramter estimation
+
+We will now use the simulated data to estimate the model parameters α,σ2,τ2,φ using maximum likelihood estimation. Iterate between the update for the mean parameter, and updating the covariance parameters. Monitor the likelihood function at each step of the algorithm to check convergence.
+
+```{r, GP simulation}
+
+```
+
+
+*** 
+
+## 2.3 Kriging
+
+We will now use the estimated model parameters to perform kriging prediction. Predict variables x(s), where predictions sites lie on a regular grid of size 25x25 for the unit square. Visualize the Kriging surface and the prediction standard error. Compare with the true field.
+
+```{r, GP simulation}
+
+```
+
+***
 
 # Part III
+
+
+
+
+
+
+
+
+
+
+
+
