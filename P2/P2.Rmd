@@ -2,14 +2,161 @@
 title: "Project2"
 subtitle: "Gaussian random field with application of INLA"
 author: "Florian Beiser, Yaolin Ge"
-output: pdf_document
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    code_download: yes
+    toc_depth: 3
+  ioslides_presentation: default
+  beamer_presentation:
+    slide_level: 1
+    keep_tex: yes
+  pdf_document:
+    toc: yes
+    toc_depth: 2
 ---
 
+```{r setup, include=TRUE,echo=FALSE}
+suppressPackageStartupMessages(library(knitr))
+knitr::opts_chunk$set(echo = FALSE, message=FALSE,warning = FALSE, error = FALSE)
+```
 
-# Part I
+```{r load libraries, echo = F}
+library(lattice)
+library(viridisLite)
+coul <- viridis(100)
+```
+
+# Part I Multivariate normal distribution
+Let $\boldsymbol{x} = (x_1, \dots, x_n), n = 100$ be multivariate normal distributed with $E(x_i) = 0, Var(x_i) = 1$, and $Corr(x_i, x_j) = e^{-0.1|i - j|}$
+
+a) Compute and image the covariance matrix $\boldsymbol{\Sigma}$ of $\boldsymbol{x}$
+
+b) Find the lower Cholesky factor $\boldsymbol{L}$, such that $\boldsymbol{L}\boldsymbol{L}^T = \boldsymbol{\Sigma}$, of this covariance matrix, and image.
+
+c) Sample $\boldsymbol{x} = \boldsymbol{Lz}$, where $\boldsymbol{z}$ is a length n random vector of independent standard normal variables. Plot the sample.
+
+d) Find the precision matrix $\boldsymbol{Q}$ of the covariance matrix, and compute the lower Cholesky factor $\boldsymbol{L}_Q$, such that $\boldsymbol{L}_Q\boldsymbol{L}_Q^T = \boldsymbol{Q}$, of this matrix. Image these matrices and compare them to the images obtained in a) and b)
+
+e) Sample $\boldsymbol{x}$ by solving $\boldsymbol{L}_Q^T\boldsymbol{x} = \boldsymbol{z}$, where $\boldsymbol{z}$ is a length n random vector of independen standard normal variables. Plot the sample.
+
+f) Permute the ordering of variables in $\boldsymbol{x}$, and redo the exercises. 
 
 
+***
 
+## Solution to Part I
+
+### a) 
+Given that $\boldsymbol{\Sigma} = e^{-0.1|i - j|}$. The covariance matrix can be expressed as follows:
+\begin{equation*}
+    \Sigma = \begin{pmatrix} 
+    1 &  e^{- 0.1 h_{12}} &\dots & e^{- 0.1 h_{1n}} \\
+    e^{- 0.1 h_{21}} & 1 & \dots & e^{- 0.1 h_{2n}} \\
+    \vdots & \vdots & \ddots & \vdots \\
+    e^{- 0.1 h_{n1}} & e^{- 0.1 h_{n2}} & \dots & 1
+    \end{pmatrix}
+\end{equation*}
+
+```{r covariance matrix, echo = F, fig.align='center'}
+# sizes
+n <- 100
+
+# define regular grid of locations
+sites1v <- array((1:n),c(n,1))
+
+# Prior mean
+m <- 0
+# compute East and North distances on grid
+ww <- array(1,c(n,1))
+
+# determine the distance matrix
+H <- abs(sites1v%*%t(ww)-ww %*% t(sites1v))
+
+# Exponential covariance model
+Sigma <- exp(-0.1*H)
+
+# Plot the covariance matrix
+levelplot(Sigma, col.regions = coul, main = "Covariance matrix")
+```
+### b) 
+According to the cholesky decomposition rule, $\boldsymbol{L}$ is the lower triangular matrix for $\boldsymbol{\Sigma}$, it can be easily computed from R using `L = chol(Sigma)`. It is then plotted as below. 
+
+```{r Cholesky, echo = F, fig.align='center'}
+L <- chol(Sigma)
+levelplot(L, col.regions = coul, main = "Lower triangular matrix")
+```
+
+
+### c) 
+Sample using $\boldsymbol{x} = \boldsymbol{L}\boldsymbol{z}$ transforms the zero-mean, standard normal random variales to the random variables with the desired covariance matrix. 
+
+```{r, random samples, fig.align='center'}
+z = rnorm(100)
+x = L %*% z
+plot(x, main = "Random samples given the covariance")
+```
+
+
+### d) 
+The precision matrix $\boldsymbol{Q}$ is the inverse of the covariance matrix $\boldsymbol{\Sigma}$, it is computed using `Q = solve(Sigma)` in R. The three matrices are thereby depicted as follows. Since the covariance matrix is not singular, given that the it belongs to the Matern family, thus it is analytically guaranteed to have positive definite property. Therefore, both precision matrix and the lower triangular precision matrix exist. 
+
+```{r comp between three matrices, fig.show = "hold", out.width="50%"}
+Q <- solve(Sigma)
+LQ <- chol(Q)
+par(mar = c(4,4,.1, .1))
+# par(mfrow=c(1,3), mar=c(4,4,4,1), oma=c(0.5,0.5,0.5,0))
+levelplot(Sigma, col.regions = coul, main = "Covariance matrix")
+levelplot(L, col.regions = coul, main = "Lower triangular covariance matrix")
+levelplot(Q, col.regions = coul, main = "Precision matrix")
+levelplot(LQ, col.regions = coul, main = "Lower triangular precision matrix")
+# levelplot(LQ, col.regions = coul, main = "Lower triangular matrix")
+```
+
+
+### e) 
+Similarly, the expected random samples can be generated using the inversion of the above formula, thus $\boldsymbol{L}_Q^T\boldsymbol{x} = \boldsymbol{z}$
+
+```{r, sample in inversion way, fig.align='center'}
+z = rnorm(100)
+x = solve(t(LQ), z)
+plot(x, main = "Random samples using inversion rule")
+```
+
+### f) 
+Permute $\boldsymbol{x}$ to make randomise the ordering of the grid, the asscociated covariance matrix can be thereby modified in a sparse way. 
+
+```{r, permutation, fig.align='center'}
+sites1v_per <- array(sample(sites1v, size = n, replace = FALSE), c(n,1))
+# determine the distance matrix
+H_per <- abs(sites1v_per%*%t(ww)-ww %*% t(sites1v_per))
+# Exponential covariance model
+Sigma_per <- exp(-0.1*H_per)
+# L matrix
+L_per <- chol(Sigma_per)
+
+z = rnorm(100)
+x_per = L_per %*% z
+plot(x_per, main = bquote("Permuted random samples given the covariance"))
+
+
+Q_per <- solve(Sigma_per)
+LQ_per <- chol(Q_per)
+z = rnorm(100)
+x_per = solve(t(LQ_per), z)
+plot(x_per, main = "Permuted random samples using inversion rule")
+
+```
+
+```{r, cont plotting, fig.show = "hold", out.width="50%"}
+par(mar = c(4,4,.1, .1))
+# par(mfrow=c(1,3), mar=c(4,4,4,1), oma=c(0.5,0.5,0.5,0))
+levelplot(Sigma_per, col.regions = coul, main = "Permuted covariance matrix")
+levelplot(L_per, col.regions = coul, main = "Permuted lower triangular covariance matrix")
+levelplot(Q_per, col.regions = coul, main = "Permuted precision matrix")
+levelplot(LQ_per, col.regions = coul, main = "Permuted lower triangular precision matrix")
+```
 
 # Part II
 
