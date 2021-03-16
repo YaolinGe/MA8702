@@ -1,0 +1,19 @@
+---
+title: "Project2"
+subtitle: "Gaussian random field with application of INLA"
+author: "Florian Beiser, Yaolin Ge"
+output: pdf_document
+---
+
+
+# Part I
+
+
+
+
+# Part II
+
+
+
+
+# Part III
