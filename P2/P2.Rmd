@@ -84,13 +84,19 @@ Sigma <- exp(-0.1*H)
 
 # Plot the covariance matrix
 levelplot(Sigma, col.regions = coul, main = "Covariance matrix")
+
+#FB: Should we invert the plot such that 1,1 is in upper left corner?
 ```
 ### b) 
 According to the cholesky decomposition rule, $\boldsymbol{L}$ is the lower triangular matrix for $\boldsymbol{\Sigma}$, it can be easily computed from R using `L = chol(Sigma)`. It is then plotted as below. 
 
 ```{r Cholesky, echo = F, fig.align='center'}
+# Using R function to calculate Cholesky decomposition
 L <- chol(Sigma)
 levelplot(L, col.regions = coul, main = "Lower triangular matrix")
+# FB: Change plotting as above?
+
+# FB: Attention!! chol() gives what is L^t in our exercise sheet, i.e. L=chol(Sigma) is an upper but NOT lower matrix!
 ```
 
 
