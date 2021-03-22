@@ -551,6 +551,13 @@ plot(inla.smarginal(res$marginals.fixed[[1]]),
      xlab="Intercept", ylab="density",
      main="Posterior marginal for fixed effect")
 
+plot(inla.smarginal(res$marginals.fixed[[2]]),
+     xlab="a1", ylab="density",
+     main="Posterior marginal for fixed effect")
+
+plot(inla.smarginal(res$marginals.fixed[[3]]),
+     xlab="a2", ylab="density",
+     main="Posterior marginal for fixed effect")
 # FB: how to get p_i? Or what is of interest here?
 
 ```
