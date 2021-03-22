@@ -551,8 +551,6 @@ plot(inla.smarginal(res$marginals.fixed[[1]]),
      xlab="Intercept", ylab="density",
      main="Posterior marginal for fixed effect")
 
-plot(inla.smarginal(res$marginals.hyperpar[[1]]),
-     xlab="tau", ylab="density",
-     main="Posterior for the hyperparameter")
+# FB: how to get p_i? Or what is of interest here?
 
 ```
