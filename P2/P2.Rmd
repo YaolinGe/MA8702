@@ -494,18 +494,31 @@ This can be posed as a latent Gaussian model suited for the INLA framework.
 2.    The parameter of the linear predictor $eta_i=\mu+x_i\beta$ are independent Gaussian with some variance and mean zero. 
 3.    The hyperparameter $\tau$ is only one-dimensional. 
 
-```{r INLA3, echo=FALSE, fig.width=12, fig.height=4, fig.cap="\\label{fig:INLA}Posterior marginals for selected effects"}
+```{r INLA3, echo=FALSE, fig.width=12, fig.height=8, fig.cap="\\label{fig:INLA}Posterior marginals for selected effects"}
 # 4 Linear regression using R-INLA
-res = inla(Length ~ Year, data=skiData)
+res = inla(Length ~ Year, data=skiData,
+           control.predictor = list(compute=TRUE))
 
 # Post processing
 summary(res)
 
-par(mfrow=c(1,3))
+plot(skiData$Year, skiData$Length, col="red",
+     xlab="year", ylab="length",
+     main="Prediction for the data")
+lines(skiData$Year, res$summary.linear.predictor$mean)
+lines(skiData$Year, res$summary.linear.predictor$`0.025quant`, lty=2)
+lines(skiData$Year, res$summary.linear.predictor$`0.975quant`, lty=2)
+
+
+par(mfrow=c(2,2))
 
 plot(inla.smarginal(res$marginals.fixed[[1]]),
-     xlab="Intercept", ylab="density",
-     main="Posterior marginal for fixed effect")
+     xlab="mu", ylab="density",
+     main="Posterior marginal for intercept")
+
+plot(inla.smarginal(res$marginals.fixed[[2]]),
+     xlab="beta", ylab="density",
+     main="Posterior marginal for slope")
 
 plot(inla.smarginal(res$marginals.hyperpar[[1]]),
      xlab="tau", ylab="density",
@@ -519,17 +532,18 @@ plot(inla.smarginal(
 
 # FB: Why is marginals.random empty?? = beta??
 
+print("Estimates for sigma:")
 inla.zmarginal(inla.tmarginal(function(x)1/sqrt(x),res$marginals.hyperpar[[1]]))
 ```
 
-FB: What does all this mean?.....
+
 
 
 ## 3.2 GLMM with random effects
 
 Last, we use INLA to analyse the "Seeds" data set.
 
-```{r GLMM1, echo=FALSE}
+```{r GLMM1, echo=FALSE, fig.width=12, fig.height=4, fig.cap="\\label{fig:INLA}Posterior marginals for selected effects"}
 library(INLA)
 # Load dataset
 data(Seeds)
@@ -537,6 +551,11 @@ data(Seeds)
 # Prepare INLA call
 data = Seeds
 formula = r ~ x1 + x2 + f(plate, model="iid")
+
+print("The x1 covariate:")
+print(data$x1)
+print("The x2 covariate:")
+print(data$x2)
 
 # Call INLA
 res = inla(formula=formula, data=data,
@@ -549,7 +568,7 @@ summary(res)
 
 par(mfrow=c(1,3))
 plot(inla.smarginal(res$marginals.fixed[[1]]),
-     xlab="Intercept", ylab="density",
+     xlab="a0", ylab="density",
      main="Posterior marginal for fixed effect")
 
 plot(inla.smarginal(res$marginals.fixed[[2]]),
@@ -561,10 +580,19 @@ plot(inla.smarginal(res$marginals.fixed[[3]]),
      main="Posterior marginal for fixed effect")
 
 
-# FB: how to get p_i? Or what is of interest here?
-par(mfrow=c(1,1))
-plot(res$summary.fitted.values$mean,
-     xlab="plate", ylab="p",
-     main="Posterior marginal mean for p")
+par(mfrow=c(1,2))
 
+plot(res$summary.linear.predictor$mean,
+     xlab="plate", ylab="logit",
+     main="Posterior marginal mean for logits")
+     
+plot(data$plate, data$r/data$n, col="red",
+     xlab="plate", ylab="p", ylim=c(0,1),
+     main="Posterior marginal mean for p")
+lines(res$summary.fitted.values$mean)
+lines(res$summary.fitted.values$`0.025quant`, lty=2)
+lines(res$summary.fitted.values$`0.975quant`, lty=2)
 ```
+
+
+Mention covariates which are 0-1 
