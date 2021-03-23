@@ -83,7 +83,9 @@ H <- abs(sites1v%*%t(ww)-ww %*% t(sites1v))
 Sigma <- exp(-0.1*H)
 
 # Plot the covariance matrix
-levelplot(t(Sigma)[,seq(from=dim(Sigma)[2],to=1,by=-1)], col.regions = coul, main = "Covariance matrix")
+levelplot(t(Sigma), 
+          col.regions = coul, main = "Covariance matrix",
+          ylim=c(100,1))
 ```
 ### b) 
 According to the cholesky decomposition rule, $\boldsymbol{L}$ is the lower triangular matrix for $\boldsymbol{\Sigma}$, it can be easily computed from R using `L = chol(Sigma)`. It is then plotted as below. 
@@ -91,7 +93,7 @@ According to the cholesky decomposition rule, $\boldsymbol{L}$ is the lower tria
 ```{r Cholesky, echo = F, fig.align='center'}
 # Using R function to calculate Cholesky decomposition
 L <- chol(Sigma)
-levelplot(t(L)[,seq(from=dim(L)[2],to=1,by=-1)], col.regions = coul, main = "Lower triangular matrix")
+levelplot(t(L), ylim=c(100,1), col.regions = coul, main = "Lower triangular matrix")
 
 # FB: Attention!! chol() gives what is L^t in our exercise sheet, i.e. L=chol(Sigma) is an upper but NOT lower matrix!
 ```
