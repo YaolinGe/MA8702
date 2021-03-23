@@ -2,7 +2,7 @@
 title: "Project2"
 subtitle: "Gaussian random field with application of INLA"
 author: $\overset{\mathrm{yaolin.ge@ntnu.no}}{10026}$ \and
-        $\overset{\mathrm{yaolin.ge@ntnu.no}}{10026}$
+        $\overset{\mathrm{florian.beiser@ntnu.no}}{10026}$
 output:
   # pdf_document:
   #   toc: true
@@ -83,9 +83,7 @@ H <- abs(sites1v%*%t(ww)-ww %*% t(sites1v))
 Sigma <- exp(-0.1*H)
 
 # Plot the covariance matrix
-levelplot(Sigma, col.regions = coul, main = "Covariance matrix")
-
-#FB: Should we invert the plot such that 1,1 is in upper left corner?
+levelplot(t(Sigma)[,seq(from=dim(Sigma)[2],to=1,by=-1)], col.regions = coul, main = "Covariance matrix")
 ```
 ### b) 
 According to the cholesky decomposition rule, $\boldsymbol{L}$ is the lower triangular matrix for $\boldsymbol{\Sigma}$, it can be easily computed from R using `L = chol(Sigma)`. It is then plotted as below. 
@@ -93,8 +91,7 @@ According to the cholesky decomposition rule, $\boldsymbol{L}$ is the lower tria
 ```{r Cholesky, echo = F, fig.align='center'}
 # Using R function to calculate Cholesky decomposition
 L <- chol(Sigma)
-levelplot(L, col.regions = coul, main = "Lower triangular matrix")
-# FB: Change plotting as above?
+levelplot(t(L)[,seq(from=dim(L)[2],to=1,by=-1)], col.regions = coul, main = "Lower triangular matrix")
 
 # FB: Attention!! chol() gives what is L^t in our exercise sheet, i.e. L=chol(Sigma) is an upper but NOT lower matrix!
 ```
