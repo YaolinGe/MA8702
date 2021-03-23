@@ -540,7 +540,9 @@ formula = r ~ x1 + x2 + f(plate, model="iid")
 
 # Call INLA
 res = inla(formula=formula, data=data,
-           family="binomial", Ntrials=n)
+           family="binomial", Ntrials=n,
+           control.family = list(link = "logit"), 
+           control.predictor = list(compute=TRUE))
 
 # Post processing
 summary(res)
@@ -557,6 +559,12 @@ plot(inla.smarginal(res$marginals.fixed[[2]]),
 plot(inla.smarginal(res$marginals.fixed[[3]]),
      xlab="a2", ylab="density",
      main="Posterior marginal for fixed effect")
+
+
 # FB: how to get p_i? Or what is of interest here?
+par(mfrow=c(1,1))
+plot(res$summary.fitted.values$mean,
+     xlab="plate", ylab="p",
+     main="Posterior marginal mean for p")
 
 ```
