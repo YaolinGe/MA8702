@@ -1,10 +1,11 @@
 ---
 title: "Project2"
 subtitle: "Gaussian random field with application of INLA"
-author: $\overset{\mathrm{yaolin.ge@ntnu.no}}{10026}$ \and
-        $\overset{\mathrm{florian.beiser@ntnu.no}}{10026}$
+author: "Yaolin Ge, Florian Beiser"
 output:
-  # pdf_document:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
   #   toc: true
   #   toc_depth: 3
   #   number_sections: true
@@ -17,9 +18,6 @@ output:
   beamer_presentation:
     slide_level: 1
     keep_tex: yes
-  pdf_document:
-    toc: yes
-    toc_depth: 2
 ---
 
 ```{r setup, include=TRUE,echo=FALSE}
@@ -509,7 +507,7 @@ summary(res)
 The INLA run generates posterior estimates for the fixed effects $\mu$ and $\beta$, which will be investigated blow. In the summary, we read the precision of the distribution for the hyperparameter $\tau$ which is rather small, meaning that the variance will be rather big. However, in a ski jumping competition we can expect a variance of several meters such that this is reasonable.
 
 
-```{r INLA4, echo=FALSE, fig.width=12, fig.height=8, fig.cap="\\label{fig:INLApredictor}Linear regression with INLA"}
+```{r INLA4, echo=FALSE, fig.width=6, fig.height=4, fig.cap="\\label{fig:INLApredictor}Linear regression with INLA"}
 # Plotting fitted values (equal to linear predictor)
 plot(skiData$Year, skiData$Length, col="red",
      xlab="year", ylab="length",
@@ -518,6 +516,7 @@ lines(skiData$Year, res$summary.linear.predictor$mean)
 lines(skiData$Year, res$summary.linear.predictor$`0.025quant`, lty=2)
 lines(skiData$Year, res$summary.linear.predictor$`0.975quant`, lty=2)
 ```
+
 In Figure \ref{fig:INLApredictor} we see that the linear trend is really well captured by the model (black line), whereas the 95% credibility interval (dashed line) does not cover all data points.
 
 
@@ -546,16 +545,17 @@ plot(inla.smarginal(
 print("Estimates for sigma:")
 inla.zmarginal(inla.tmarginal(function(x)1/sqrt(x),res$marginals.hyperpar[[1]]))
 ```
+
 In Figure \ref{fig:INLAmarginals}, we depict the marginal posterior distributions for all variables of interest. In particular, the transformed marginal analysis confirms our interpretation that the variance in the magnitude of several meters (roughly around 4 meters), but again this is very reasonable for this application. 
 
 
 ## 3.2 GLMM with random effects
 
 Last, we use INLA to analyse the "Seeds" data set. This data concerns the portion of seeds that germinated on a sample set of 21 plates. The plates are equipped with one of two types of seeds and one of two types of extracts. The characteristics of plate $i$ are described by the covariates $x_{1,i}$ which is the type of seed and $x_{2,i}$ which is the type of root extract - these covariates are either 0 or 1 for the different possibilies. Then the number of germinated seeds $r_i$ on plate $i$ is counted in contrast to the number of total seeds $n_i$ on that plate. Having $p_i$ as the probability of germination on plate $i$, a binomial model for this example is
-\begin{equation*}
+\begin{align*}
 r_i &\sim Binomial(p_i,n_i)\\
-\text{logit}(p_i) = a_0 + a_1x_{1,i} + a_2x_{2,i}+\varepsilon_i
-\end{equation*}
+\text{logit}(p_i) &= a_0 + a_1x_{1,i} + a_2x_{2,i}+\varepsilon_i
+\end{align*}
 where $\varepsilon_i$ is some iid noise. As above non-specified prior- and hyperparameter-distributions use the default of `R-INLA`. This model is then again implemented in `R-INLA`.  
 
 ```{r GLMM1, echo=FALSE}
@@ -599,6 +599,7 @@ plot(inla.smarginal(res$marginals.fixed[[3]]),
      xlab="a2", ylab="density",
      main="Posterior marginal for a2")
 ```
+
 In Figure \ref{fig:GLMMmarginals}, we see rather confident estimates for the fixed effects of the model. In particular, we note that the effect $a_2$ will dominate the model since we only have 0 and 1 values for the covariates. The effect $a_0$ is common for all plates and the absolute value of $a_1$ for the seed type is a way smaller than the one for the root extract.
 
 
