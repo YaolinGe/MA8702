@@ -228,6 +228,22 @@ We assume the mean increases with east and north coordinates as follows: $\mu_j 
 
 Simulate $N = 200$ random sites in the unit square and plot them. Form the covariance matrix using $\sigma = 1, \phi = 10, \tau = 0.05$. Take its Cholesky decomposition and simulate dependent zero-mean Gaussian data variables, then add the mean using $\alpha = 1$. Plot your observations.
 
+
+The true mean of the field is expressed as 
+    \begin{equation*}
+        \mu_i = \alpha((s_{i1} - 0.5) + (s_{i2} - 0.5)) = -\alpha + \alpha s_{i1} + \alpha s_{i2} = \underbrace{
+        \begin{bmatrix}
+        1 & s_{i1} & s_{i2} \\
+        \end{bmatrix}}_{\boldsymbol{h}^T(\boldsymbol{s}_i)}
+        \underbrace{
+        \begin{bmatrix}
+        -\alpha \\
+        \alpha \\
+        \alpha 
+        \end{bmatrix}}_{\boldsymbol{\beta}}
+    \end{equation*}
+    where $s_{i1}, s_{i2}$ are the location from east and north direction in the grid. 
+
 ```{r GP simulation}
 
 Matern_cov <- function(sigma, phi, t){
@@ -320,6 +336,55 @@ plot(x_ind, y_ind, cex = abs(y_sampled), main = "Random samples in the field, ci
 
 We will now use the simulated data to estimate the model parameters $\alpha, \sigma^2, \tau^2, \phi$ using maximum likelihood estimation. Iterate between the update for the mean parameter, and updating the covariance parameters. Monitor the likelihood function at each step of the algorithm to check convergence.
 
+The mean of the field is modelled by $p(\boldsymbol{x})$ and the imperfect information $\boldsymbol{y} = (y_1, \dots, y_m)$ conditional on $\boldsymbol{x}$ can be modelled by $p(\boldsymbol{y}|\boldsymbol{x})$, which can be expressed as follows:
+    \begin{equation*}
+        p(\boldsymbol{x}) = \mathop{N}(\boldsymbol{H}\beta, \boldsymbol{\Sigma}), \quad p(\boldsymbol{y}|\boldsymbol{x}) = \mathop{N}(\boldsymbol{Fx}, \boldsymbol{T})
+    \end{equation*}
+    Therefore, the marginal likelihood of the data is 
+    \begin{equation*}
+        p(\boldsymbol{y}) = \mathop{N}(\boldsymbol{G\beta}, \boldsymbol{C}), \quad \boldsymbol{G} = \boldsymbol{FH}, \quad \boldsymbol{C} = \boldsymbol{F\Sigma F^T} + \boldsymbol{T}
+    \end{equation*}
+    The log-likelihood as a function of $\beta$ and unknown fixed nuisance parameters $\boldsymbol{\theta}$ in the prior covariance matrix $\boldsymbol{\Sigma} = \boldsymbol{\Sigma(\boldsymbol{\theta})}$, and/or the likelihood noise matrix $\boldsymbol{T} = \boldsymbol{T}(\boldsymbol{\theta})$ becomes
+    \begin{equation*}
+        l(\boldsymbol{\theta}, \boldsymbol{\beta}) = -\frac{m}{2} \log(2\pi) - \frac{1}{2}\log|\boldsymbol{C}| - \frac{1}{2}(\boldsymbol{y} - \boldsymbol{G}\boldsymbol{\beta})^T\boldsymbol{C}^{-1}(\boldsymbol{y} - \boldsymbol{G\beta})
+    \end{equation*}
+
+ The MLEs of $\boldsymbol{\beta}$ and $\boldsymbol{\theta}$ are obtained by
+    \begin{equation*}
+        (\hat{\boldsymbol{\beta}}, \hat{\boldsymbol{\theta}}) = \underset{\boldsymbol{\beta}, \boldsymbol{\theta}}{\arg\max}\{l(\boldsymbol{\beta, \theta})\}
+    \end{equation*}
+    For fixed $\boldsymbol{\theta}$, the MLEs of $\boldsymbol{\beta}$ can be determined analytically.
+    \begin{equation*}
+        \frac{dl}{d\boldsymbol{\beta}} = \boldsymbol{G}^T\boldsymbol{C}^{-1}\boldsymbol{y} - \boldsymbol{G}^T\boldsymbol{C}^{-1}\boldsymbol{G}\boldsymbol{\beta} = \boldsymbol{0}, \quad \hat{\boldsymbol{\beta}} = (\boldsymbol{G}^T\boldsymbol{C}^{-1}\boldsymbol{G})^{-1}\boldsymbol{G}^T\boldsymbol{C}^{-1}\boldsymbol{y}
+    \end{equation*}
+    Whereas for fixed $\boldsymbol{\beta}$, the MLE of nuisance parameters $\boldsymbol{\theta}$ can be obtained by numerical maximization. Let $\boldsymbol{z} = \boldsymbol{y} - \boldsymbol{G\beta}$, and $\boldsymbol{Q} = \boldsymbol{C}^{-1}$. For each component of $\boldsymbol{\theta}_r$, $r = 1, \dots, d$, in this case, $\theta$ has 3 components ($\sigma^2, \eta, \tau^2$). The score of the log-likelihood becomes
+    \begin{equation*}
+        \frac{dl}{d\theta_r} = -\frac{1}{2}\text{trace}(\boldsymbol{Q}\frac{d\boldsymbol{C}}{d\theta_r}) + \frac{1}{2}\boldsymbol{z}^T\boldsymbol{Q}\frac{d\boldsymbol{C}}{d\theta_r}\boldsymbol{Qz}
+    \end{equation*}
+
+
+ The above mentioned score can be solved iteratively using Fisher scoring algorithm. To achieve the numerical stability, the expected Hessian is applied, which is 
+    \begin{equation*}
+        \mathop{E}(\frac{d^2l}{d\theta_rd\theta_{\bar{r}}}) = -\frac{1}{2}\text{trace}(\boldsymbol{Q}\frac{d\boldsymbol{C}}{d\theta_{\bar{r}}}\boldsymbol{Q}\frac{d\boldsymbol{C}}{d\theta_r})
+    \end{equation*}
+    
+\begin{algorithm}[H]
+     \KwData{initial $\beta_0$, $\theta_0$}
+     \KwResult{Converged $\hat{\beta}$, $\hat{\theta}$}
+     \While{not converged}{
+      $\boldsymbol{C} = \boldsymbol{C}(\boldsymbol{\theta}^b)$\;
+      $\boldsymbol{\beta}^{b+1} = [\boldsymbol{G}^T\boldsymbol{C}^{-1}\boldsymbol{G}]^{-1}\boldsymbol{G}^T\boldsymbol{C}^{-1}\boldsymbol{y}$\;
+      $\boldsymbol{z} = \boldsymbol{y} - \boldsymbol{G}\boldsymbol{\beta}^{b + 1}$\;
+      $\boldsymbol{Q} = \boldsymbol{C}^{-1}$ \;
+      $\boldsymbol{C}^*_r = \frac{d\boldsymbol{C}(\boldsymbol{\theta}^b)}{d\theta_r}, \quad r = 1, \dots, d$ \; 
+      $u_r = \frac{dl}{d\theta_r} = -\frac{1}{2}\text{trace}(\boldsymbol{Q}\boldsymbol{C}_r^*) + \frac{1}{2}\boldsymbol{z}^T\boldsymbol{Q}\boldsymbol{C}_r^*\boldsymbol{Qz}$\;
+      $\boldsymbol{V}_{r\bar{r}}=\mathop{E}(\frac{d^2l}{d\theta_rd\theta_{\bar{r}}}) = -\frac{1}{2}\text{trace}(\boldsymbol{Q}\boldsymbol{C}_r^*\boldsymbol{Q}\boldsymbol{C}_{\bar{r}}^*)$\;
+      $\boldsymbol{\theta}^{b + 1} = \boldsymbol{\theta}^b + \boldsymbol{V}^{-1}\boldsymbol{u}$\;
+      $b = b + 1$
+      }
+    %  \caption{How to write algorithms}
+    \end{algorithm}
+    
 ```{r, parameter estimation}
 #%%
 C_matrix <- function(theta){
