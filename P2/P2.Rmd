@@ -65,7 +65,7 @@ Given that $\boldsymbol{\Sigma} = e^{-0.1|i - j|}$. The covariance matrix can be
 \end{equation*}
 
 ```{r covariance matrix, echo = F, fig.align='center'}
-# set.seed(87012021)
+# set.seed()
 # sizes
 n <- 100
 
@@ -89,9 +89,9 @@ plotf <- function(val, string){
 
 # Plot the covariance matrix
 plotf(Sigma, "Covariance matrix")
-levelplot(t(Sigma), 
-          col.regions = coul, main = "Covariance matrix",
-          ylim=c(100,1))
+# levelplot(t(Sigma), 
+#           col.regions = coul, main = "Covariance matrix",
+#           ylim=c(100,1))
 ```
 ### b) 
 According to the cholesky decomposition rule, $\boldsymbol{L}$ is the lower triangular matrix for $\boldsymbol{\Sigma}$, it can be easily computed from R using `L = chol(Sigma)`. It is then plotted as below. 
@@ -99,8 +99,8 @@ According to the cholesky decomposition rule, $\boldsymbol{L}$ is the lower tria
 ```{r Cholesky, echo = F, fig.align='center'}
 # Using R function to calculate Cholesky decomposition
 L <- t(chol(Sigma))
-plotf(L, "lower")
-levelplot(t(L), ylim=c(100,1), col.regions = coul, main = "Lower triangular matrix")
+plotf(L, "Lower triangular covariance matrix")
+# levelplot(t(L), ylim=c(100,1), col.regions = coul, main = "Lower triangular matrix")
 
 # FB: Attention!! chol() gives what is L^t in our exercise sheet, i.e. L=chol(Sigma) is an upper but NOT lower matrix!
 ```
@@ -121,14 +121,13 @@ The precision matrix $\boldsymbol{Q}$ is the inverse of the covariance matrix $\
 
 ```{r comp between three matrices, fig.show = "hold", out.width="50%"}
 Q <- solve(Sigma)
-LQ <- chol(Q)
+LQ <- t(chol(Q))
 par(mar = c(4,4,.1, .1))
 # par(mfrow=c(1,3), mar=c(4,4,4,1), oma=c(0.5,0.5,0.5,0))
-levelplot(Sigma, col.regions = coul, main = "Covariance matrix")
-levelplot(L, col.regions = coul, main = "Lower triangular covariance matrix")
-levelplot(Q, col.regions = coul, main = "Precision matrix")
-levelplot(LQ, col.regions = coul, main = "Lower triangular precision matrix")
-# levelplot(LQ, col.regions = coul, main = "Lower triangular matrix")
+plotf(Sigma, "Covariance matrix")
+plotf(L, "Lower triangular covariance matrix")
+plotf(Q, "Precision matrix")
+plotf(LQ, "Lower triangular precision matrix")
 ```
 
 
@@ -137,7 +136,7 @@ Similarly, the expected random samples can be generated using the inversion of t
 
 ```{r, sample in inversion way, fig.align='center'}
 z = rnorm(100)
-x = solve(t(LQ), z)
+x = solve(LQ, z)
 plot(x, main = "Random samples using inversion rule")
 ```
 
@@ -158,7 +157,7 @@ for (i in c(1:n_per)){
   Sigma_temp <- exp(-0.1*H_per)
   Sigma_per[[i]] <- Sigma_temp
   # L matrix
-  L_temp <- chol(Sigma_temp)
+  L_temp <- t(chol(Sigma_temp))
   L_per[[i]] <- L_temp
   
   z = rnorm(100)
@@ -166,7 +165,7 @@ for (i in c(1:n_per)){
   plot(x_per, main = paste(i, "Permuted random samples given the covariance"))
   
   Q_temp <- solve(Sigma_temp)
-  LQ_temp <- chol(Q_temp)
+  LQ_temp <- t(chol(Q_temp))
   Q_per[[i]] <- Q_temp
   LQ_per[[i]] <- LQ_temp
   z = rnorm(100)
@@ -181,37 +180,37 @@ for (i in c(1:n_per)){
 i = 1
 par(mar = c(4, 4,.1, .1))
 # par(mfrow=c(1,3), mar=c(4,4,4,1), oma=c(0.5,0.5,0.5,0))
-levelplot(Sigma_per[[i]], col.regions = coul, main = paste(i, "Permuted covariance matrix"))
-levelplot(L_per[[i]], col.regions = coul, main = paste(i,"Permuted lower triangular covariance matrix"))
-levelplot(Q_per[[i]], col.regions = coul, main = paste(i,"Permuted precision matrix"))
-levelplot(LQ_per[[i]], col.regions = coul, main = paste(i,"Permuted lower triangular precision matrix"))
+plotf(Sigma_per[[i]], "Covariance matrix")
+plotf(L_per[[i]], "Lower triangular covariance matrix")
+plotf(Q_per[[i]], "Precision matrix")
+plotf(LQ_per[[i]], "Lower triangular precision matrix")
 ```
 
 ```{r, cont plotting 2, fig.show = "hold", out.width="50%"}
 i = 2
 par(mar = c(4, 4,.1, .1))
 # par(mfrow=c(1,3), mar=c(4,4,4,1), oma=c(0.5,0.5,0.5,0))
-levelplot(Sigma_per[[i]], col.regions = coul, main = paste(i, "Permuted covariance matrix"))
-levelplot(L_per[[i]], col.regions = coul, main = paste(i,"Permuted lower triangular covariance matrix"))
-levelplot(Q_per[[i]], col.regions = coul, main = paste(i,"Permuted precision matrix"))
-levelplot(LQ_per[[i]], col.regions = coul, main = paste(i,"Permuted lower triangular precision matrix"))
+plotf(Sigma_per[[i]], "Covariance matrix")
+plotf(L_per[[i]], "Lower triangular covariance matrix")
+plotf(Q_per[[i]], "Precision matrix")
+plotf(LQ_per[[i]], "Lower triangular precision matrix")
 ```
 
 ```{r, cont plotting 3, fig.show = "hold", out.width="50%"}
 i = 3
 par(mar = c(4, 4,.1, .1))
 # par(mfrow=c(1,3), mar=c(4,4,4,1), oma=c(0.5,0.5,0.5,0))
-levelplot(Sigma_per[[i]], col.regions = coul, main = paste(i, "Permuted covariance matrix"))
-levelplot(L_per[[i]], col.regions = coul, main = paste(i,"Permuted lower triangular covariance matrix"))
-levelplot(Q_per[[i]], col.regions = coul, main = paste(i,"Permuted precision matrix"))
-levelplot(LQ_per[[i]], col.regions = coul, main = paste(i,"Permuted lower triangular precision matrix"))
+plotf(Sigma_per[[i]], "Covariance matrix")
+plotf(L_per[[i]], "Lower triangular covariance matrix")
+plotf(Q_per[[i]], "Precision matrix")
+plotf(LQ_per[[i]], "Lower triangular precision matrix")
 ```
 
 
 
 # Part II Gaussian random fields and Kriging
 
-The purpose of this computer exercise is to give an introduction to parameter estima- tion and kriging for Gaussian random field models for spatial data.
+The purpose of this computer exercise is to give an introduction to parameter estimation and kriging for Gaussian random field models for spatial data.
 
 We assume the following observation model on the unit square:
 
@@ -261,11 +260,13 @@ Matern_cov <- function(sigma, phi, t){
     return(sigma ^ 2 * (1 + phi * t) * exp(-phi * t))
 }
 
-plotf <- function(v, string){
+plotf2d <- function(v, string){
   vv <- v
   dim(vv) <- c(n1, n2)
   levelplot(vv, col.regions = coul, main = string)
 }
+
+set.seed(2021)
 
 # Setup the grid
 n1 = 25 # number of grid points along east direction
@@ -276,8 +277,7 @@ dn1 = 1/n1
 dn2 = 1/n2
 sites1 = array(seq(0, 1, dn1), c(n1, 1))
 sites2 = array(seq(0, 1, dn2), c(n2, 1))
-# sites1 = array(seq(1, n1), c(n1, 1))
-# sites2 = array(seq(1, n2), c(n2, 1))
+
 ww1 = rep(1, n1)
 ww2 = rep(1, n2)
 sites1m = sites1 %*% t(ww1) # sites1m is the matrix version of sites1
@@ -312,16 +312,17 @@ THETA_TRUE = matrix(c(sigma, phi, tau), nrow = 3, ncol = 1)
 
 Sigma = Matern_cov(sigma, phi, t)  # matern covariance
 
-L = chol(Sigma) # lower L
-x = t(L) %*% rnorm(n) # sample from zero mean random variables
+L = t(chol(Sigma)) # lower L
+x = L %*% rnorm(n) # sample from zero mean random variables
 
 H = array(c(rep(1, n), sites1v, sites2v), dim = c(n, 3)) # design matrix
 mu_prior = H %*% BETA_TRUE
-plotf(mu_prior, "prior mean")
-mu_real = mu_prior + x
-plotf(mu_real, "realisation of the grf")
+plotf2d(mu_prior, "Prior mean")
 
-# sampling from realisations
+mu_real = mu_prior + x
+plotf2d(mu_real, "Realisation of the fields")
+
+# sampling from realisations in the regular grids
 M = 200
 Fmatrix = matrix(0, M, n)
 ind = sample(n, size = M, replace = FALSE)
@@ -333,15 +334,41 @@ y_sampled = Fmatrix %*% mu_real + tau * rnorm(M, 1)
 x_ind = sites1v[ind]
 y_ind = sites2v[ind]
 
-plot(x_ind, y_ind, cex = abs(y_sampled), main = "Random samples in the field, circle size indicates the relative value")
+plot(x_ind, y_ind, cex = abs(y_sampled), main = "Random samples in the grid, circle size indicates the relative value")
 
+
+# sampling randomly without grids
+while (TRUE){
+  x_ind = runif(M)
+  y_ind = runif(M)  
+  if ((unique(x_ind) == x_ind) && (unique(y_ind) == y_ind)){
+    dim(x_ind) <- c(M, 1)
+    dim(y_ind) <- c(M, 1)
+    break;
+  }
+}
+
+ddE = x_ind %*% matrix(rep(1, M), nrow = 1, ncol = M) - matrix(rep(1, M), nrow = M, ncol = 1) %*% t(x_ind)
+dd2E = ddE * ddE
+ddN = y_ind %*% matrix(rep(1, M), nrow = 1, ncol = M) - matrix(rep(1, M), nrow = M, ncol = 1) %*% t(y_ind)
+dd2N = ddN * ddN
+tsample = sqrt(dd2E + dd2N)
+Sigma_sample = Matern_cov(sigma, phi, tsample)
+Lsample = t(chol(Sigma_sample))
+xsample = Lsample %*% rnorm(M)
+Hsample = array(c(rep(1, M), x_ind, y_ind), dim = c(M, 3)) # sampling design matrix
+mu_prior_sample = Hsample %*% BETA_TRUE
+mu_real_sample = mu_prior_sample + xsample
+
+plot(x_ind, y_ind, cex = abs(mu_real_sample), main = "Random samples in the square, circle size indicates the relative value")
+y_sampled = mu_real_sample + tau * rnorm(M, 1)
 ```
 
 ***
 
 ## 2.2 Paramter estimation
 
-We will now use the simulated data to estimate the model parameters $\alpha, \sigma^2, \tau^2, \phi$ using maximum likelihood estimation. Iterate between the update for the mean parameter, and updating the covariance parameters. Monitor the likelihood function at each step of the algorithm to check convergence.
+We will now use the simulated data to estimate the model parameters $\alpha, \sigma^2, \tau^2, \phi$ using maximum likelihood estimation. Iterate between the update for the mean parameter, and updating the covariance parameters. Monitor the likelihood function at each step of the algorithm to check convergence. Since the sampling randomly in the field can cause problems in the distance matrix and accordingly the rest of the calculations. Therefore, it is more stable to use the random samples from the regular grids. 
 
 The mean of the field is modelled by $p(\boldsymbol{x})$ and the imperfect information $\boldsymbol{y} = (y_1, \dots, y_m)$ conditional on $\boldsymbol{x}$ can be modelled by $p(\boldsymbol{y}|\boldsymbol{x})$, which can be expressed as follows:
     \begin{equation*}
@@ -430,10 +457,9 @@ dC_dtau <- function(theta){
 }
 
 # Use fisher scoring to find MLE parameters
-# beta = np.zeros([3, 1])
-beta = matrix(c(-2.1, 3.1, .9), nrow = 3, ncol = 1)
-theta = rbind(.245, 9.4, .003)
-MAX_ITER = 200
+beta = matrix(c(-1.1, 0.9, 0.9), nrow = 3, ncol = 1)
+theta = rbind(1.2, 8.5, .04)
+MAX_ITER = 500
 No_iter = 0
 epsilon = 10
 Beta = matrix(0, nrow = MAX_ITER, ncol = 3)
@@ -442,7 +468,6 @@ Likelihood = matrix(0, nrow = MAX_ITER, ncol = 1)
 while (No_iter < MAX_ITER & epsilon > .0001){
     C = C_matrix(theta)
     beta = solve(t(G) %*% solve(C, G), t(G) %*% solve(C, y_sampled))
-    # beta = np.linalg.solve(np.dot(G.T, np.linalg.solve(C, G)), np.dot(G.T, np.linalg.solve(C, y_sampled)))
     Beta[No_iter, ] = t(beta)
     z = y_sampled - G %*% beta
     lik = -M/2 * log(2 * pi) - 1/2 * log(det(C)) -  1/2 * t(z) %*% solve(C, z) # otherwise, it becomes inf
@@ -470,22 +495,18 @@ while (No_iter < MAX_ITER & epsilon > .0001){
     V33 = -1 / 2 * sum(diag(solve(C, (dC_dTau %*% solve(C, dC_dTau)))))
 
     V = matrix(c(V11, V12, V13, V21, V22, V23, V31, V32, V33), nrow = 3, ncol = 3)
-    # print(lik)
-    # print(No_iter)
+
     theta_new = theta - solve(V, u)  # here it is minus, but in the book, it says plus, needs to be rechecked
     epsilon = norm(theta_new - theta, type = "2") / norm(beta, type = "2")
     theta = theta_new
     print(paste(epsilon , " , iter no is ", No_iter))
     No_iter = No_iter + 1
 }
-# print(beta)
-# print(BETA_TRUE)
-# print(theta)
-# print(THETA_TRUE)
-print(paste("Total iteration is ", No_iter))
-plot(c(1:No_iter), Likelihood, main = "likelihood function")
 
-# alphah = (sum(np.abs(beta)) / 3).squeeze()
+print(paste("Total iteration is ", No_iter))
+# plot(c(1:No_iter), Likelihood, main = "likelihood function")
+plot(c(1:No_iter), Likelihood, type="l", col="black", lwd=5, xlab="iteration", ylab="Log likelihood", main="Log likelihood over iteration")
+
 thetah = theta
 sigmah = theta[1]
 phih = theta[2]
@@ -494,22 +515,12 @@ betah = beta
 beta1 = beta[1]
 beta2 = beta[2]
 beta3 = beta[3]
+alpha = (beta2 + beta3 - beta1) / 3 # to extract the 
 
-# print('Estimated sigma is ', sigmah, "\nEstimated eta is ", etah, \
-#       "\nEstimated tau is ", tauh, "\nEstimated alpha is ", alphah)
 print(paste("Estimated sigma is ", round(sigmah, digits = 3), "; True sigma is ", THETA_TRUE[1]))
 print(paste("Estimated phi is ", round(phih, digits = 2), "; True phi is ", THETA_TRUE[2]))
 print(paste("Estimated tau is ", round(tauh, digits = 5), "; True tau is ", THETA_TRUE[3]))
-print(paste("Estimated beta1 is ", round(beta1, digits = 2), "; True beta1 is ", BETA_TRUE[1]))
-print(paste("Estimated beta2 is ", round(beta2, digits = 2), "; True beta2 is ", BETA_TRUE[2]))
-print(paste("Estimated beta3 is ", round(beta3, digits = 2), "; True beta3 is ", BETA_TRUE[3]))
-
-# print(paste("\nEstimated sigma is ", round(sigmah, digits = 3), "; True sigma is ", THETA_TRUE[1], 
-#             "\nEstimated phi is ", round(phih, digits = 2), "; True phi is ", THETA_TRUE[2], 
-#             "\nEstimated tau is ", round(tauh, digits = 5), "; True tau is ", THETA_TRUE[3], 
-#             "\nEstimated beta1 is ", round(beta1, digits = 2), "; True beta1 is ", BETA_TRUE[1], 
-#             "\nEstimated beta2 is ", round(beta2, digits = 2), "; True beta2 is ", BETA_TRUE[2], 
-#             "\nEstimated beta3 is ", round(beta3, digits = 2), "; True beta3 is ", BETA_TRUE[3]))
+print(paste("Estimated alpha is ", round(alpha, digits = 2), "; True alpha is ", BETA_TRUE[3]))
 
 ```
 
@@ -525,12 +536,12 @@ Sigmah = Matern_cov(sigmah, phih, t) # estimated covariance matrix
 Lh = chol(Sigmah)
 mh = H %*% betah + Lh %*% rnorm(n)
 Ch = C_matrix(thetah)
-xp = mh + Sigmah %*% t(Fmatrix) %*% solve(C, (y_sampled - Fmatrix %*% mh))
-plotf(xp, "posterior mean")
+xp = mu_prior + Sigmah %*% t(Fmatrix) %*% solve(C, (y_sampled - Fmatrix %*% mh))
+plotf2d(xp, "Posterior mean")
 Sigmap = Sigmah - Sigmah %*% t(Fmatrix) %*% solve(Ch, Fmatrix %*% Sigmah)
 # plotf(Sigmap, "posterior covariance")
 estd = sqrt(diag(Sigmap))
-plotf(estd, "posterior std")
+plotf2d(estd, "Posterior std")
 MSE = sqrt(sum(abs(xp - mu_real) ** 2) / n)
 print(paste("The prediction error is ", MSE))
 ```
