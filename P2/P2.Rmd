@@ -2,6 +2,8 @@
 title: "Project2"
 subtitle: "Gaussian random field with application of INLA"
 author: "Yaolin Ge, Florian Beiser"
+header-includes:
+  - \usepackage[]{algorithm2e}
 output:
   pdf_document:
     toc: yes
@@ -63,6 +65,7 @@ Given that $\boldsymbol{\Sigma} = e^{-0.1|i - j|}$. The covariance matrix can be
 \end{equation*}
 
 ```{r covariance matrix, echo = F, fig.align='center'}
+# set.seed(87012021)
 # sizes
 n <- 100
 
@@ -80,7 +83,12 @@ H <- abs(sites1v%*%t(ww)-ww %*% t(sites1v))
 # Exponential covariance model
 Sigma <- exp(-0.1*H)
 
+plotf <- function(val, string){
+  levelplot(t(val), ylim=c(100,1), col.regions = coul, main = string)  
+}
+
 # Plot the covariance matrix
+plotf(Sigma, "Covariance matrix")
 levelplot(t(Sigma), 
           col.regions = coul, main = "Covariance matrix",
           ylim=c(100,1))
@@ -90,7 +98,8 @@ According to the cholesky decomposition rule, $\boldsymbol{L}$ is the lower tria
 
 ```{r Cholesky, echo = F, fig.align='center'}
 # Using R function to calculate Cholesky decomposition
-L <- chol(Sigma)
+L <- t(chol(Sigma))
+plotf(L, "lower")
 levelplot(t(L), ylim=c(100,1), col.regions = coul, main = "Lower triangular matrix")
 
 # FB: Attention!! chol() gives what is L^t in our exercise sheet, i.e. L=chol(Sigma) is an upper but NOT lower matrix!
@@ -362,10 +371,11 @@ The mean of the field is modelled by $p(\boldsymbol{x})$ and the imperfect infor
 
 
  The above mentioned score can be solved iteratively using Fisher scoring algorithm. To achieve the numerical stability, the expected Hessian is applied, which is 
-    \begin{equation*}
+\begin{equation*}
         \mathop{E}(\frac{d^2l}{d\theta_rd\theta_{\bar{r}}}) = -\frac{1}{2}\text{trace}(\boldsymbol{Q}\frac{d\boldsymbol{C}}{d\theta_{\bar{r}}}\boldsymbol{Q}\frac{d\boldsymbol{C}}{d\theta_r})
-    \end{equation*}
-    
+\end{equation*}
+
+The pseudo code for the Fisher scoring algorithm can then be  expressed as follows:
 \begin{algorithm}[H]
      \KwData{initial $\beta_0$, $\theta_0$}
      \KwResult{Converged $\hat{\beta}$, $\hat{\theta}$}
@@ -374,15 +384,15 @@ The mean of the field is modelled by $p(\boldsymbol{x})$ and the imperfect infor
       $\boldsymbol{\beta}^{b+1} = [\boldsymbol{G}^T\boldsymbol{C}^{-1}\boldsymbol{G}]^{-1}\boldsymbol{G}^T\boldsymbol{C}^{-1}\boldsymbol{y}$\;
       $\boldsymbol{z} = \boldsymbol{y} - \boldsymbol{G}\boldsymbol{\beta}^{b + 1}$\;
       $\boldsymbol{Q} = \boldsymbol{C}^{-1}$ \;
-      $\boldsymbol{C}^*_r = \frac{d\boldsymbol{C}(\boldsymbol{\theta}^b)}{d\theta_r}, \quad r = 1, \dots, d$ \; 
+      $\boldsymbol{C}^*_r = \frac{d\boldsymbol{C}(\boldsymbol{\theta}^b)}{d\theta_r}, \quad r = 1, \dots, d$ \;
       $u_r = \frac{dl}{d\theta_r} = -\frac{1}{2}\text{trace}(\boldsymbol{Q}\boldsymbol{C}_r^*) + \frac{1}{2}\boldsymbol{z}^T\boldsymbol{Q}\boldsymbol{C}_r^*\boldsymbol{Qz}$\;
       $\boldsymbol{V}_{r\bar{r}}=\mathop{E}(\frac{d^2l}{d\theta_rd\theta_{\bar{r}}}) = -\frac{1}{2}\text{trace}(\boldsymbol{Q}\boldsymbol{C}_r^*\boldsymbol{Q}\boldsymbol{C}_{\bar{r}}^*)$\;
       $\boldsymbol{\theta}^{b + 1} = \boldsymbol{\theta}^b + \boldsymbol{V}^{-1}\boldsymbol{u}$\;
       $b = b + 1$
       }
-    %  \caption{How to write algorithms}
-    \end{algorithm}
-    
+\end{algorithm}
+
+
 ```{r, parameter estimation}
 #%%
 C_matrix <- function(theta){
@@ -422,8 +432,8 @@ dC_dtau <- function(theta){
 # Use fisher scoring to find MLE parameters
 # beta = np.zeros([3, 1])
 beta = matrix(c(-2.1, 3.1, .9), nrow = 3, ncol = 1)
-theta = rbind(.245, 9.3, .003)
-MAX_ITER = 5
+theta = rbind(.245, 9.4, .003)
+MAX_ITER = 200
 No_iter = 0
 epsilon = 10
 Beta = matrix(0, nrow = MAX_ITER, ncol = 3)
@@ -472,7 +482,7 @@ while (No_iter < MAX_ITER & epsilon > .0001){
 # print(BETA_TRUE)
 # print(theta)
 # print(THETA_TRUE)
-
+print(paste("Total iteration is ", No_iter))
 plot(c(1:No_iter), Likelihood, main = "likelihood function")
 
 # alphah = (sum(np.abs(beta)) / 3).squeeze()
@@ -487,13 +497,19 @@ beta3 = beta[3]
 
 # print('Estimated sigma is ', sigmah, "\nEstimated eta is ", etah, \
 #       "\nEstimated tau is ", tauh, "\nEstimated alpha is ", alphah)
-print(cat("\nEstimated sigma is ", round(sigmah, digits = 3), "; True sigma is ", THETA_TRUE[1], 
-            "\nEstimated phi is ", round(phih, digits = 2), "; True phi is ", THETA_TRUE[2], 
-            "\nEstimated tau is ", round(tauh, digits = 5), "; True tau is ", THETA_TRUE[3], 
-            "\nEstimated beta1 is ", round(beta1, digits = 2), "; True beta1 is ", BETA_TRUE[1], 
-            "\nEstimated beta2 is ", round(beta2, digits = 2), "; True beta2 is ", BETA_TRUE[2], 
-            "\nEstimated beta3 is ", round(beta3, digits = 2), "; True beta3 is ", BETA_TRUE[3]))
+print(paste("Estimated sigma is ", round(sigmah, digits = 3), "; True sigma is ", THETA_TRUE[1]))
+print(paste("Estimated phi is ", round(phih, digits = 2), "; True phi is ", THETA_TRUE[2]))
+print(paste("Estimated tau is ", round(tauh, digits = 5), "; True tau is ", THETA_TRUE[3]))
+print(paste("Estimated beta1 is ", round(beta1, digits = 2), "; True beta1 is ", BETA_TRUE[1]))
+print(paste("Estimated beta2 is ", round(beta2, digits = 2), "; True beta2 is ", BETA_TRUE[2]))
+print(paste("Estimated beta3 is ", round(beta3, digits = 2), "; True beta3 is ", BETA_TRUE[3]))
 
+# print(paste("\nEstimated sigma is ", round(sigmah, digits = 3), "; True sigma is ", THETA_TRUE[1], 
+#             "\nEstimated phi is ", round(phih, digits = 2), "; True phi is ", THETA_TRUE[2], 
+#             "\nEstimated tau is ", round(tauh, digits = 5), "; True tau is ", THETA_TRUE[3], 
+#             "\nEstimated beta1 is ", round(beta1, digits = 2), "; True beta1 is ", BETA_TRUE[1], 
+#             "\nEstimated beta2 is ", round(beta2, digits = 2), "; True beta2 is ", BETA_TRUE[2], 
+#             "\nEstimated beta3 is ", round(beta3, digits = 2), "; True beta3 is ", BETA_TRUE[3]))
 
 ```
 
