@@ -8,9 +8,6 @@ output:
   pdf_document:
     toc: yes
     toc_depth: 2
-  #   toc: true
-  #   toc_depth: 3
-  #   number_sections: true
   html_document:
     toc: yes
     toc_float: yes
@@ -83,72 +80,98 @@ H <- abs(sites1v%*%t(ww)-ww %*% t(sites1v))
 # Exponential covariance model
 Sigma <- exp(-0.1*H)
 
+# Funtion:
+# illustrating matrices
+
+# Input:
+# val - 100x100 matrix
+# string - main title for the plot
 plotf <- function(val, string){
   levelplot(t(val), ylim=c(100,1), col.regions = coul, main = string)  
 }
 
 # Plot the covariance matrix
 plotf(Sigma, "Covariance matrix")
-# levelplot(t(Sigma), 
-#           col.regions = coul, main = "Covariance matrix",
-#           ylim=c(100,1))
 ```
+
+The covariance has the biggest entries on and around the main diagonal. However, it is fully dense. 
+
 ### b) 
 According to the cholesky decomposition rule, $\boldsymbol{L}$ is the lower triangular matrix for $\boldsymbol{\Sigma}$, it can be easily computed from R using `L = chol(Sigma)`. It is then plotted as below. 
 
 ```{r Cholesky, echo = F, fig.align='center'}
 # Using R function to calculate Cholesky decomposition
 L <- t(chol(Sigma))
-plotf(L, "Lower triangular covariance matrix")
-# levelplot(t(L), ylim=c(100,1), col.regions = coul, main = "Lower triangular matrix")
 
-# FB: Attention!! chol() gives what is L^t in our exercise sheet, i.e. L=chol(Sigma) is an upper but NOT lower matrix!
+# Plotting
+plotf(L, "Lower triangular covariance matrix")
 ```
 
+The decomposed matrix shows a similar structure as the original covariance matrix, such that the biggest values are on and close to the main diagonal, but naturally the matrix is lower triangular.
 
 ### c) 
 Sample using $\boldsymbol{x} = \boldsymbol{L}\boldsymbol{z}$ transforms the zero-mean, standard normal random variales to the random variables with the desired covariance matrix. 
 
 ```{r, random samples, fig.align='center'}
+# Sampling x and calculating x
 z = rnorm(100)
 x = L %*% z
-plot(x, main = "Random samples given the covariance")
+
+# Plotting
+plot(x, main = "Random samples given the covariance", type="l")
 ```
 
+For the given covariance matrix, a sample of $x$ obtains values around 0 and has a quite wriggling structure. 
 
 ### d) 
 The precision matrix $\boldsymbol{Q}$ is the inverse of the covariance matrix $\boldsymbol{\Sigma}$, it is computed using `Q = solve(Sigma)` in R. The three matrices are thereby depicted as follows. Since the covariance matrix is not singular, given that the it belongs to the Matern family, thus it is analytically guaranteed to have positive definite property. Therefore, both precision matrix and the lower triangular precision matrix exist. 
 
 ```{r comp between three matrices, fig.show = "hold", out.width="50%"}
+# Calculation of precision matrix
 Q <- solve(Sigma)
+# Cholesky decomp of precision matrix
 LQ <- t(chol(Q))
+
+# Plotting
 par(mar = c(4,4,.1, .1))
-# par(mfrow=c(1,3), mar=c(4,4,4,1), oma=c(0.5,0.5,0.5,0))
 plotf(Sigma, "Covariance matrix")
 plotf(L, "Lower triangular covariance matrix")
 plotf(Q, "Precision matrix")
 plotf(LQ, "Lower triangular precision matrix")
 ```
 
+The precision matrix is even more diagonal dominant as the covariance matrix, i.e. values are further than the first off-diagonal are numerically negligible, which makes the precision matrix much more sparse. The same holds for the Cholesky decomposition of the precision matrix.
 
 ### e) 
 Similarly, the expected random samples can be generated using the inversion of the above formula, thus $\boldsymbol{L}_Q^T\boldsymbol{x} = \boldsymbol{z}$
 
 ```{r, sample in inversion way, fig.align='center'}
+# Sampling using precision matix
 z = rnorm(100)
 x = solve(LQ, z)
-plot(x, main = "Random samples using inversion rule")
+
+# Plotting
+plot(x, main = "Random samples using inversion rule", type="l")
 ```
 
+The sample shows the same characterisitics as samples which are calculated directly. 
+
 ### f) 
-Permute $\boldsymbol{x}$ to make randomise the ordering of the grid, the asscociated covariance matrix can be thereby modified in a sparse way. 
+Permute $\boldsymbol{x}$ to make randomise the ordering of the grid, the associated covariance matrix can be thereby modified in a sparse way. 
 
 ```{r, permutation, fig.align='center'}
-n_per = 3
+# Input:
+n_per = 3 # number of permutations
+
+# Bookkeeping:
 Sigma_per <- list()
 L_per <- list()
 Q_per <- list()
 LQ_per <- list()
+
+par(mfrow=c(3,2))
+par(mar = c(2,2,3,3))
+# Loop for permuations
 for (i in c(1:n_per)){
   sites1v_per <- array(sample(sites1v, size = n, replace = FALSE), c(n,1))
   # determine the distance matrix
@@ -162,7 +185,7 @@ for (i in c(1:n_per)){
   
   z = rnorm(100)
   x_per = L_temp %*% z
-  plot(x_per, main = paste(i, "Permuted random samples given the covariance"))
+  plot(x_per, main = paste(i, ". sampe (cov)"), type="l", ylim=c(-2,2))
   
   Q_temp <- solve(Sigma_temp)
   LQ_temp <- t(chol(Q_temp))
@@ -170,14 +193,17 @@ for (i in c(1:n_per)){
   LQ_per[[i]] <- LQ_temp
   z = rnorm(100)
   x_per = solve(t(LQ_temp), z)
-  plot(x_per, main = paste(i, "Permuted random samples using inversion rule"))
+  plot(x_per, main = paste(i, ". sample (prec)"), type="l", ylim=c(-2,2))
 }
 
 
 ```
 
+All samples show same characterisics (as far as we can tell from a single realisation).
+
 ```{r, cont plotting 1, fig.show = "hold", out.width="50%"}
 i = 1
+par(mfrow=c(2,2))
 par(mar = c(4, 4,.1, .1))
 # par(mfrow=c(1,3), mar=c(4,4,4,1), oma=c(0.5,0.5,0.5,0))
 plotf(Sigma_per[[i]], "Covariance matrix")
@@ -206,6 +232,7 @@ plotf(Q_per[[i]], "Precision matrix")
 plotf(LQ_per[[i]], "Lower triangular precision matrix")
 ```
 
+In contrast to similar sample results, the permutation have a significant influence on the structure of the matrices. The covarinace matrix looses its clear pattern, which leads to a non-sparse precision matrix!
 
 
 # Part II Gaussian random fields and Kriging
