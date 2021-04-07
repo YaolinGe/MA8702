@@ -311,7 +311,7 @@ alpha = 1.0
 
 # Output:
 # cov matrix in size of distance matrix H
-MaternCov <- function(theta){
+MaternCov <- function(theta, H){
   sigma=theta[1]
   phi=theta[2]
   tau=theta[3]
@@ -320,7 +320,7 @@ MaternCov <- function(theta){
 }
 
 # Covariance matrix
-Cov = MaternCov(theta)
+Cov = MaternCov(theta, H)
 
 # simulation
 LCov = t (chol(Cov))
@@ -506,7 +506,7 @@ while(abs(l-l_old)>tol){
   # current residual
   Z = y - alpha*mu
   # current covariance for the model
-  C = MaternCov(theta) + theta[3]**2*diag(N)
+  C = MaternCov(theta, H) + theta[3]**2*diag(N)
   # current precision for the model
   Q = solve(C)
   # current gradient
@@ -552,39 +552,65 @@ We will now use the estimated model parameters to perform kriging prediction. Pr
 <!--       \boldsymbol{\Sigma}_{\boldsymbol{x}|\boldsymbol{y}} &= \boldsymbol{\Sigma} - \boldsymbol{\Sigma F}^T (\boldsymbol{F\Sigma F}^T + \boldsymbol{T})^{-1}\boldsymbol{F\Sigma} -->
 <!-- \end{equation*} -->
 
-By depicting the posterior mean and covariance, one can find that Gaussian process model is suitable for predicting the field surface with relatively low mean squared error. 
+By depicting the posterior mean and covariance, one can find that Gaussian process model is suitable for predicting the field surface with relatively low mean squared error. To make the predicted surface of the field, the grid needs to be represented
 
 ```{r, kriging}
-sigma0 = stats[[1]][2]
-phi0 = stats[[1]][3]
-tau0 = stats[[1]][4]
-alpha0 = stats[[1]][5]
+plotf2d <- function(v, string){
+  vv <- v
+  dim(vv) <- c(n1, n2)
+  levelplot(vv, col.regions = coul, main = string, xlab = "s1", ylab = "s2")
+}
 
+# # Setup the grid
+n1 = 25 # number of grid points along east direction
+n2 = 25 # number of grid points along north direction
+n = n1 * n2 # total number of grid points
+
+dn1 = 1/n1
+dn2 = 1/n2
+sites1 = array(seq(0, 1, dn1), c(n1, 1))
+sites2 = array(seq(0, 1, dn2), c(n2, 1))
+
+dn1 = 1 / n1
+dn2 = 1 / n2
+sites1 = array(seq(0, 1, dn1), c(n1, 1))
+sites2 = array(seq(0, 1, dn2), c(n2, 1))
+
+sites1v= matrix(meshgrid(sites1, sites2)$X, ncol = 1)
+sites2v = matrix(meshgrid(sites1, sites2)$Y, ncol = 1)
+grid = cbind(sites1m, sites2m)
 
 sigmah = stats[[iter]][2]
 phih = stats[[iter]][3]
 tauh = stats[[iter]][4]
+thetah = c(sigmah, phih, tauh)
+
 alphah = stats[[iter]][5]
 
+mu_prior = (grid[, 1] - .5 + grid[, 2] - .5) * alphah
 
-mu_prior = alpha0 * mu
 
-# mu_posterior = mu_prior - C0 * C * (y - mu_prior)
-# Sigma_posterior = Sigma - C0 * C * C.T
+# distance matrix for the grid locs
+HGrid = rdist(grid, grid)
+C0 = MaternCov(thetah, HGrid)
+# distance matrix for observation locs
+HObs = rdist(s, s)
+C = MaternCov(thetah, HObs) + tau ** 2 * matrix(rep(1, N * N), c(N, N))
+# distance matrix for observation locs and variable locs
+HGridObs = rdist(grid, s)
+C0_ = MaternCov(thetah, HGridObs)
 
-# betah = matrix(c(-alphah, alphah, alphah), ncol = 1)
-# Sigmah = Matern_cov(sigmah, phih, t) # estimated covariance matrix
-# Lh = t(chol(Sigmah)) # lower triangular matrix for the estimated covariance matrix
-# # mh = H %*% betah + Lh %*% rnorm(n) # Estimated mean
-# Ch = C_matrix(thetah)
-# xp = mu_prior + Sigmah %*% t(Fmatrix) %*% solve(C, (y_sampled - Fmatrix %*% mu_prior))
-# plotf2d(xp, "Posterior mean")
-# Sigmap = Sigmah - Sigmah %*% t(Fmatrix) %*% solve(Ch, Fmatrix %*% Sigmah)
-# # plotf(Sigmap, "posterior covariance")
-# estd = sqrt(diag(Sigmap))
-# plotf2d(estd, "Posterior std")
-# MSE = sqrt(sum(abs(xp - mu_real) ** 2) / n)
-# print(paste("The prediction error is ", MSE))
+mu_posterior = mu_prior + C0_ %*% solve(C) %*% (y - mu * alphah)
+Sigma_posterior = C0 - C0_ %*% solve(C) %*% t(C0_)
+
+L = t(chol(C0))
+mu_real = L %*% rnorm(n) +  (grid[, 1] - .5 + grid[, 2] - .5) * 1
+
+plotf2d(mu_posterior, "Kriging surface")
+estd = sqrt(diag(Sigma_posterior))
+plotf2d(estd, "Predication standard error")
+
+plotf2d(mu_real, "True field")
 ```
 
 ***
