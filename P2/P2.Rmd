@@ -62,7 +62,6 @@ Given that $\boldsymbol{\Sigma} = e^{-0.1|i - j|}$. The covariance matrix can be
 \end{equation*}
 
 ```{r covariance matrix, echo = F, fig.align='center'}
-# set.seed()
 # sizes
 n <- 100
 
@@ -71,6 +70,7 @@ sites1v <- array((1:n),c(n,1))
 
 # Prior mean
 m <- 0
+
 # compute East and North distances on grid
 ww <- array(1,c(n,1))
 
@@ -204,7 +204,7 @@ All samples show same characterisics (as far as we can tell from a single realis
 ```{r, cont plotting 1, fig.show = "hold", out.width="50%"}
 i = 1
 par(mfrow=c(2,2))
-par(mar = c(4, 4,.1, .1))
+par(mar = c(4, 4,.1, .1)) 
 plotf(Sigma_per[[i]], "Covariance matrix")
 plotf(L_per[[i]], "Lower triangular covariance matrix")
 plotf(Q_per[[i]], "Precision matrix")
@@ -302,22 +302,21 @@ theta = c(sigma, phi, tau)
 alpha = 1.0
 
 
-# Function: 
-# Calculate the C matrix
-
-# Input: 
-# theta - current parameters
-
-# Output:
-
-C_matrix <- function(theta){
-  sigma = theta[1]
-  phi = theta[2]
-  tau = theta[3]
-  Sigma = Matern_cov(sigma, phi, t)
-  C = Fmatrix %*% Sigma %*% t(Fmatrix) + diag(M) * tau^2
-  return(C)
-}
+# # Function: 
+# # Calculate the C matrix
+# 
+# # Input: 
+# # theta - current parameters
+# 
+# # Output:
+# C_matrix <- function(theta){
+#   sigma = theta[1]
+#   phi = theta[2]
+#   tau = theta[3]
+#   Sigma = Matern_cov(sigma, phi, t)
+#   C = Fmatrix %*% Sigma %*% t(Fmatrix) + diag(M) * tau^2
+#   return(C)
+# }
 
 
 # Function:
@@ -333,8 +332,7 @@ MaternCov <- function(theta){
   sigma=theta[1]
   phi=theta[2]
   tau=theta[3]
-  # Cov = sigma**2*(1+phi*H)*exp(-phi*H)
-  Cov = sigma**2*(1+phi*t)*exp(-phi*t)
+  Cov = sigma**2*(1+phi*H)*exp(-phi*H)
   return(Cov)
 }
 
@@ -376,118 +374,6 @@ knitr::include_graphics("F.pdf")
 knitr::include_graphics("Fv.pdf")
 ```
 
-
-```{r GP simulation}
-
-Matern_cov <- function(sigma, phi, t){
-    # param sigma: scaling coef
-    # param eta: range coef
-    # param t: distance matrix
-    # return: matern covariance
-    return(sigma ^ 2 * (1 + phi * t) * exp(-phi * t))
-}
-
-plotf2d <- function(v, string){
-  vv <- v
-  dim(vv) <- c(n1, n2)
-  levelplot(vv, col.regions = coul, main = string)
-}
-
-# Setup the grid
-n1 = 25 # number of grid points along east direction
-n2 = 25 # number of grid points along north direction
-n = n1 * n2 # total number of grid points
-
-dn1 = 1/n1
-dn2 = 1/n2
-sites1 = array(seq(0, 1, dn1), c(n1, 1))
-sites2 = array(seq(0, 1, dn2), c(n2, 1))
-
-ww1 = rep(1, n1)
-ww2 = rep(1, n2)
-sites1m = sites1 %*% t(ww1) # sites1m is the matrix version of sites1
-sites2m = ww2 %*% t(sites2)
-
-sites1v = matrix(sites1m, nrow = n, ncol = 1)
-sites2v = matrix(sites2m, nrow = n, ncol = 1)
-
-# plot(sites1v, sites2v)
-
-# Compute the distance matrix
-ddE = sites1v %*% matrix(rep(1, n), nrow = 1, ncol = n) - matrix(rep(1, n), nrow = n, ncol = 1) %*% t(sites1v)
-dd2E = ddE * ddE
-ddN = sites2v %*% matrix(rep(1, n), nrow = 1, ncol = n) - matrix(rep(1, n), nrow = n, ncol = 1) %*% t(sites2v)
-dd2N = ddN * ddN
-t = sqrt(dd2E + dd2N)
-levelplot(t, col.regions = coul, main = "Distance matrix")
-
-# Simulate the initial random field
-alpha = 1.0 # beta as in regression model
-sigma = 1.0  # scaling coef in matern kernel
-phi = 10 # range coef in matern kernel
-# eta = 10 # range coef in matern kernel
-tau = .05 # iid noise
-
-beta1 = -alpha
-beta2 = alpha
-beta3 = alpha
-
-BETA_TRUE = rbind(beta1, beta2, beta3)
-THETA_TRUE = rbind(sigma, phi, tau)
-
-Sigma = Matern_cov(sigma, phi, t)  # matern covariance
-
-L = t(chol(Sigma)) # lower L
-x = L %*% rnorm(n) # sample from zero mean random variables
-
-H = array(c(rep(1, n), sites1v, sites2v), dim = c(n, 3)) # design matrix
-mu_prior = H %*% BETA_TRUE
-plotf2d(mu_prior, "Prior mean")
-
-mu_real = mu_prior + x
-plotf2d(mu_real, "Realisation of the fields")
-
-# sampling from realisations in the regular grids
-M = 200
-Fmatrix = matrix(0, M, n)
-ind = sample(n, size = M, replace = FALSE)
-for (i in c(1:M)){
-  Fmatrix[i, ind[i]] = TRUE
-}
-G = Fmatrix %*% H
-y_sampled = Fmatrix %*% mu_real + tau * rnorm(M, 1)
-x_ind = sites1v[ind]
-y_ind = sites2v[ind]
-
-plot(x_ind, y_ind, cex = abs(y_sampled), main = "Random samples in the grid, circle size indicates the relative value")
-
-
-# sampling randomly without grids
-while (TRUE){
-  x_ind = runif(M)
-  y_ind = runif(M)
-  if ((unique(x_ind) == x_ind) && (unique(y_ind) == y_ind)){
-    dim(x_ind) <- c(M, 1)
-    dim(y_ind) <- c(M, 1)
-    break;
-  }
-}
-
-ddE_sample = x_ind %*% matrix(rep(1, M), nrow = 1, ncol = M) - matrix(rep(1, M), nrow = M, ncol = 1) %*% t(x_ind)
-dd2E_sample = ddE_sample * ddE_sample
-ddN_sample = y_ind %*% matrix(rep(1, M), nrow = 1, ncol = M) - matrix(rep(1, M), nrow = M, ncol = 1) %*% t(y_ind)
-dd2N_sample = ddN_sample * ddN_sample
-tsample = sqrt(dd2E_sample + dd2N_sample)
-Sigma_sample = Matern_cov(sigma, phi, tsample)
-Lsample = t(chol(Sigma_sample))
-xsample = Lsample %*% rnorm(M)
-Hsample = array(c(rep(1, M), x_ind, y_ind), dim = c(M, 3)) # sampling design matrix
-mu_prior_sample = Hsample %*% BETA_TRUE
-mu_real_sample = mu_prior_sample + xsample
-
-# plot(x_ind, y_ind, cex = abs(mu_real_sample), main = "Random samples in the square, circle size indicates the relative value")
-# y_sampled = mu_real_sample + tau * rnorm(M, 1)
-```
 
 ***
 
@@ -552,8 +438,8 @@ library(psych)
 sigma = 1.5
 phi = 7.5
 tau = 0.1
-# theta = c(sigma, phi, tau)
-theta = matrix(c(sigma, phi, tau), ncol = 1)
+theta = c(sigma, phi, tau)
+# theta = matrix(c(sigma, phi, tau), ncol = 1)
 alpha = 0.5
 
 # optimization parameters
@@ -651,7 +537,6 @@ while(abs(l-l_old)>tol){
   Z = y - alpha*mu
   # current covariance for the model
   C = MaternCov(theta) + theta[3]**2*diag(N)
-  print(dim(MaternCov(theta)))
   # current precision for the model
   Q = solve(C)
   # current gradient

@@ -535,6 +535,24 @@ l_old = 0           # likelihood value of previous iteration
 
 
 # Function: 
+# Calculate the C matrix
+
+# Input: 
+# theta - current parameters
+
+# Output:
+C = F*Sigma*F.T + T
+C_matrix <- function(theta){
+  sigma = theta[1]
+  phi = theta[2]
+  tau = theta[3]
+  Sigma = Matern_cov(sigma, phi, t)
+  C = Fmatrix %*% Sigma %*% t(Fmatrix) + diag(M) * tau^2
+  return(C)
+}
+
+
+# Function: 
 # Calculation of derivatives of the C-matrix wrt parameters
 
 # Input: 
