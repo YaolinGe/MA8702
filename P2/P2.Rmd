@@ -27,6 +27,7 @@ knitr::opts_chunk$set(echo = FALSE, message=FALSE,warning = FALSE, error = FALSE
 ```{r load libraries, echo = F}
 library(lattice)
 library(viridisLite)
+library(fields)
 coul <- viridis(100)
 ```
 
@@ -266,8 +267,7 @@ The true mean of the field is expressed as
 where $s_{i1}, s_{i2}$ are the location from east and north direction in the grid. 
     
 
-```{r GP1, fig.width=5, fig.height=5}
-par(mfrow=c(1,1))
+```{r GP1, fig.width = 3.5, fig.height = 4, fig.align="center"}
 set.seed(0421)
 # sample locations
 N = 200
@@ -327,7 +327,9 @@ cols <- rbPal(N)[as.numeric(cut(y,breaks = N))]
 cexs_scale = 0.4
 cexs_shift = 3.0
 cexs = pmax(0, cexs_scale*(y+cexs_shift))
+```
 
+```{r plot2, fig.height = 4, fig.width = 3.5, fig.align="center"}
 # plotting
 plot(s[,1],s[,2], col = cols, cex=cexs, pch=4,
      main="Observations", xlab="", ylab="")
@@ -540,19 +542,22 @@ We see that the parameter estimation comes closer to the true values as the init
 ## 2.3 Kriging
 
 We will now use the estimated model parameters to perform kriging prediction. Predict variables $x(s)$, where predictions sites lie on a regular grid of size 25x25 for the unit square. Visualize the Kriging surface and the prediction standard error. Compare with the true field. The expression for the kriging can be shown as below:
-<!-- \begin{equation*} -->
-<!--       \boldsymbol{\mu}_{\boldsymbol{x}|\boldsymbol{y}} &= \boldsymbol{\mu} + \boldsymbol{\Sigma F}^T(\boldsymbol{F\Sigma F}^T + \boldsymbol{T})^{-1}(\boldsymbol{y} - \boldsymbol{F\mu}) \\ -->
-<!--       \boldsymbol{\Sigma}_{\boldsymbol{x}|\boldsymbol{y}} &= \boldsymbol{\Sigma} - \boldsymbol{\Sigma F}^T (\boldsymbol{F\Sigma F}^T + \boldsymbol{T})^{-1}\boldsymbol{F\Sigma} -->
-<!-- \end{equation*} -->
+\begin{equation*}
+  \hat{Y}_0 = \mathop{E}(Y_0|\boldsymbol{Y}) = \boldsymbol{X}_0\hat{\beta} +\boldsymbol{C}_{0,.}\boldsymbol{C}^{-1}(\boldsymbol{Y} - \boldsymbol{X}\boldsymbol{\hat{\beta}})\\
+\end{equation*}
+
+\begin{equation*}
+Var(Y_0|\boldsymbol{Y}) = \boldsymbol{C}_0 - \boldsymbol{C}_{0,.}\boldsymbol{C}^{-1}\boldsymbol{C}^{'}_{0,.}\\
+\end{equation*}
 
 By depicting the posterior mean and covariance, one can find that Gaussian process model is suitable for predicting the field surface with relatively low mean squared error. To make the predicted surface of the field, the grid needs to be represented
 
-```{r, kriging}
-library(pracma)
-plotf2d <- function(v, string){
+```{r, kriging, fig.align="center", fig.width=3.5, fig.height=3.5}
+# library(pracma)
+plotf2d <- function(v, string, vmin, vmax){
   vv <- v
   dim(vv) <- c(n1, n2)
-  levelplot(vv, col.regions = coul, main = string, xlab = "s1", ylab = "s2")
+  levelplot(vv, col.regions = coul, main = string, at=seq(vmin, vmax, length.out=100), xlab = "s1", ylab = "s2")
 }
 
 # # Setup the grid
@@ -570,9 +575,14 @@ dn2 = 1 / n2
 sites1 = array(seq(0, 1, dn1), c(n1, 1))
 sites2 = array(seq(0, 1, dn2), c(n2, 1))
 
-sites1v= matrix(meshgrid(sites1, sites2)$X, ncol = 1)
-sites2v = matrix(meshgrid(sites1, sites2)$Y, ncol = 1)
-grid = cbind(sites1m, sites2m)
+ww1 = rep(1, n1)
+ww2 = rep(1, n2)
+sites1m = sites1 %*% t(ww1) # sites1m is the matrix version of sites1
+sites2m = ww2 %*% t(sites2)
+
+sites1v= matrix(sites1m, ncol = 1)
+sites2v = matrix(sites2m, ncol = 1)
+grid = cbind(sites1v, sites2v)
 
 sigmah = stats[[iter]][2]
 phih = stats[[iter]][3]
@@ -598,11 +608,20 @@ Sigma_posterior = C0 - C0_ %*% solve(C) %*% t(C0_)
 L = t(chol(C0))
 mu_real = L %*% rnorm(n) +  (grid[, 1] - .5 + grid[, 2] - .5) * 1
 
-plotf2d(mu_posterior, "Kriging surface")
+plotf2d(mu_posterior, "Kriging surface", -4, 4)
 estd = sqrt(diag(Sigma_posterior))
-plotf2d(estd, "Predication standard error")
-plotf2d(mu_real, "True field")
 ```
+
+```{r plot 3, fig.width = 3.5, fig.height = 3.5, fig.align="center"}
+plotf2d(estd, "Predication standard error", 0, 1)
+
+```
+
+```{r plot4, fig.width = 3.5, fig.height = 3.5, fig.align="center"}
+plotf2d(mu_real, "True field", -4, 4)
+```
+
+From the prediction error plot, one can tell that once it is observed, the corresponding prediction error shrinks to small values. So one can tell by observing the field using Guassian process, it provides a suitable way to predict the desired field.
 
 ***
 
