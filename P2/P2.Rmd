@@ -548,6 +548,7 @@ We will now use the estimated model parameters to perform kriging prediction. Pr
 By depicting the posterior mean and covariance, one can find that Gaussian process model is suitable for predicting the field surface with relatively low mean squared error. To make the predicted surface of the field, the grid needs to be represented
 
 ```{r, kriging}
+library(pracma)
 plotf2d <- function(v, string){
   vv <- v
   dim(vv) <- c(n1, n2)
@@ -577,9 +578,7 @@ sigmah = stats[[iter]][2]
 phih = stats[[iter]][3]
 tauh = stats[[iter]][4]
 thetah = c(sigmah, phih, tauh)
-
 alphah = stats[[iter]][5]
-
 mu_prior = (grid[, 1] - .5 + grid[, 2] - .5) * alphah
 
 
@@ -602,7 +601,6 @@ mu_real = L %*% rnorm(n) +  (grid[, 1] - .5 + grid[, 2] - .5) * 1
 plotf2d(mu_posterior, "Kriging surface")
 estd = sqrt(diag(Sigma_posterior))
 plotf2d(estd, "Predication standard error")
-
 plotf2d(mu_real, "True field")
 ```
 
