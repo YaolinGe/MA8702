@@ -302,23 +302,6 @@ theta = c(sigma, phi, tau)
 alpha = 1.0
 
 
-# # Function: 
-# # Calculate the C matrix
-# 
-# # Input: 
-# # theta - current parameters
-# 
-# # Output:
-# C_matrix <- function(theta){
-#   sigma = theta[1]
-#   phi = theta[2]
-#   tau = theta[3]
-#   Sigma = Matern_cov(sigma, phi, t)
-#   C = Fmatrix %*% Sigma %*% t(Fmatrix) + diag(M) * tau^2
-#   return(C)
-# }
-
-
 # Function:
 # assembling of covariance matrix
 # with Matern-like ansatz
@@ -573,31 +556,31 @@ We see that the parameter estimation comes closer to the true values as the init
 ## 2.3 Kriging
 
 We will now use the estimated model parameters to perform kriging prediction. Predict variables $x(s)$, where predictions sites lie on a regular grid of size 25x25 for the unit square. Visualize the Kriging surface and the prediction standard error. Compare with the true field. The expression for the kriging can be shown as below:
-  \begin{equation*}
-      \boldsymbol{\mu}_{\boldsymbol{x}|\boldsymbol{y}} &= \boldsymbol{\mu} + \boldsymbol{\Sigma F}^T(\boldsymbol{F\Sigma F}^T + \boldsymbol{T})^{-1}(\boldsymbol{y} - \boldsymbol{F\mu}) \\
-      \boldsymbol{\Sigma}_{\boldsymbol{x}|\boldsymbol{y}} &= \boldsymbol{\Sigma} - \boldsymbol{\Sigma F}^T (\boldsymbol{F\Sigma F}^T + \boldsymbol{T})^{-1}\boldsymbol{F\Sigma}
-  \end{equation*}
+<!-- \begin{equation*} -->
+<!--       \boldsymbol{\mu}_{\boldsymbol{x}|\boldsymbol{y}} &= \boldsymbol{\mu} + \boldsymbol{\Sigma F}^T(\boldsymbol{F\Sigma F}^T + \boldsymbol{T})^{-1}(\boldsymbol{y} - \boldsymbol{F\mu}) \\ -->
+<!--       \boldsymbol{\Sigma}_{\boldsymbol{x}|\boldsymbol{y}} &= \boldsymbol{\Sigma} - \boldsymbol{\Sigma F}^T (\boldsymbol{F\Sigma F}^T + \boldsymbol{T})^{-1}\boldsymbol{F\Sigma} -->
+<!-- \end{equation*} -->
 
 By depicting the posterior mean and covariance, one can find that Gaussian process model is suitable for predicting the field surface with relatively low mean squared error. 
 
 ```{r, kriging}
-sigmah = stats[[iter]][2]
-phih = stats[[iter]][3]
-tauh = stats[[iter]][4]
-alphah = stats[[iter]][5]
-betah = matrix(c(-alphah, alphah, alphah), ncol = 1)
-Sigmah = Matern_cov(sigmah, phih, t) # estimated covariance matrix
-Lh = t(chol(Sigmah)) # lower triangular matrix for the estimated covariance matrix
-# mh = H %*% betah + Lh %*% rnorm(n) # Estimated mean
-Ch = C_matrix(thetah)
-xp = mu_prior + Sigmah %*% t(Fmatrix) %*% solve(C, (y_sampled - Fmatrix %*% mu_prior))
-plotf2d(xp, "Posterior mean")
-Sigmap = Sigmah - Sigmah %*% t(Fmatrix) %*% solve(Ch, Fmatrix %*% Sigmah)
-# plotf(Sigmap, "posterior covariance")
-estd = sqrt(diag(Sigmap))
-plotf2d(estd, "Posterior std")
-MSE = sqrt(sum(abs(xp - mu_real) ** 2) / n)
-print(paste("The prediction error is ", MSE))
+# sigmah = stats[[iter]][2]
+# phih = stats[[iter]][3]
+# tauh = stats[[iter]][4]
+# alphah = stats[[iter]][5]
+# betah = matrix(c(-alphah, alphah, alphah), ncol = 1)
+# Sigmah = Matern_cov(sigmah, phih, t) # estimated covariance matrix
+# Lh = t(chol(Sigmah)) # lower triangular matrix for the estimated covariance matrix
+# # mh = H %*% betah + Lh %*% rnorm(n) # Estimated mean
+# Ch = C_matrix(thetah)
+# xp = mu_prior + Sigmah %*% t(Fmatrix) %*% solve(C, (y_sampled - Fmatrix %*% mu_prior))
+# plotf2d(xp, "Posterior mean")
+# Sigmap = Sigmah - Sigmah %*% t(Fmatrix) %*% solve(Ch, Fmatrix %*% Sigmah)
+# # plotf(Sigmap, "posterior covariance")
+# estd = sqrt(diag(Sigmap))
+# plotf2d(estd, "Posterior std")
+# MSE = sqrt(sum(abs(xp - mu_real) ** 2) / n)
+# print(paste("The prediction error is ", MSE))
 ```
 
 ***
