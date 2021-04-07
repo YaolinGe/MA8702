@@ -260,23 +260,14 @@ Simulate $N = 200$ random sites in the unit square and plot them. Form the covar
 
 
 The true mean of the field is expressed as 
-    \begin{equation*}
-        \mu_i = \alpha((s_{i1} - 0.5) + (s_{i2} - 0.5)) = -\alpha + \alpha s_{i1} + \alpha s_{i2} = \underbrace{
-        \begin{bmatrix}
-        1 & s_{i1} & s_{i2} \\
-        \end{bmatrix}}_{\boldsymbol{h}^T(\boldsymbol{s}_i)}
-        \underbrace{
-        \begin{bmatrix}
-        -\alpha \\
-        \alpha \\
-        \alpha 
-        \end{bmatrix}}_{\boldsymbol{\beta}}
-    \end{equation*}
-    where $s_{i1}, s_{i2}$ are the location from east and north direction in the grid. 
+\begin{equation*}
+    \mu_i = \alpha((s_{i1} - 0.5) + (s_{i2} - 0.5)) 
+\end{equation*}
+where $s_{i1}, s_{i2}$ are the location from east and north direction in the grid. 
     
 
 ```{r GP1, fig.width=5, fig.height=5}
-
+par(mfrow=c(1,1))
 set.seed(0421)
 # sample locations
 N = 200
@@ -350,53 +341,55 @@ In the observation plot, bigger crosses and brighter colors indicate higher obse
 
 ## 2.2 Paramter estimation
 
-We will now use the simulated data to estimate the model parameters $\alpha, \sigma^2, \tau^2, \phi$ using maximum likelihood estimation. Iterate between the update for the mean parameter, and updating the covariance parameters. Monitor the likelihood function at each step of the algorithm to check convergence. Since the sampling randomly in the field can cause problems in the distance matrix and accordingly the rest of the calculations. Therefore, it is more stable to use the random samples from the regular grids. 
+We will now use the simulated data to estimate the model parameters $\alpha, \sigma^2, \tau^2, \phi$ using maximum likelihood estimation. Iterate between the update for the mean parameter, and updating the covariance parameters. Monitor the likelihood function at each step of the algorithm to check convergence. 
 
 The mean of the field is modelled by $p(\boldsymbol{x})$ and the imperfect information $\boldsymbol{y} = (y_1, \dots, y_m)$ conditional on $\boldsymbol{x}$ can be modelled by $p(\boldsymbol{y}|\boldsymbol{x})$, which can be expressed as follows:
-    \begin{equation*}
-        p(\boldsymbol{x}) = \mathop{N}(\boldsymbol{H}\beta, \boldsymbol{\Sigma}), \quad p(\boldsymbol{y}|\boldsymbol{x}) = \mathop{N}(\boldsymbol{Fx}, \boldsymbol{T})
-    \end{equation*}
-    Therefore, the marginal likelihood of the data is 
-    \begin{equation*}
-        p(\boldsymbol{y}) = \mathop{N}(\boldsymbol{G\beta}, \boldsymbol{C}), \quad \boldsymbol{G} = \boldsymbol{FH}, \quad \boldsymbol{C} = \boldsymbol{F\Sigma F^T} + \boldsymbol{T}
-    \end{equation*}
-    The log-likelihood as a function of $\beta$ and unknown fixed nuisance parameters $\boldsymbol{\theta}$ in the prior covariance matrix $\boldsymbol{\Sigma} = \boldsymbol{\Sigma(\boldsymbol{\theta})}$, and/or the likelihood noise matrix $\boldsymbol{T} = \boldsymbol{T}(\boldsymbol{\theta})$ becomes
-    \begin{equation*}
-        l(\boldsymbol{\theta}, \boldsymbol{\beta}) = -\frac{m}{2} \log(2\pi) - \frac{1}{2}\log|\boldsymbol{C}| - \frac{1}{2}(\boldsymbol{y} - \boldsymbol{G}\boldsymbol{\beta})^T\boldsymbol{C}^{-1}(\boldsymbol{y} - \boldsymbol{G\beta})
-    \end{equation*}
-
- The MLEs of $\boldsymbol{\beta}$ and $\boldsymbol{\theta}$ are obtained by
-    \begin{equation*}
-        (\hat{\boldsymbol{\beta}}, \hat{\boldsymbol{\theta}}) = \underset{\boldsymbol{\beta}, \boldsymbol{\theta}}{\arg\max}\{l(\boldsymbol{\beta, \theta})\}
-    \end{equation*}
-    For fixed $\boldsymbol{\theta}$, the MLEs of $\boldsymbol{\beta}$ can be determined analytically.
-    \begin{equation*}
-        \frac{dl}{d\boldsymbol{\beta}} = \boldsymbol{G}^T\boldsymbol{C}^{-1}\boldsymbol{y} - \boldsymbol{G}^T\boldsymbol{C}^{-1}\boldsymbol{G}\boldsymbol{\beta} = \boldsymbol{0}, \quad \hat{\boldsymbol{\beta}} = (\boldsymbol{G}^T\boldsymbol{C}^{-1}\boldsymbol{G})^{-1}\boldsymbol{G}^T\boldsymbol{C}^{-1}\boldsymbol{y}
-    \end{equation*}
-    Whereas for fixed $\boldsymbol{\beta}$, the MLE of nuisance parameters $\boldsymbol{\theta}$ can be obtained by numerical maximization. Let $\boldsymbol{z} = \boldsymbol{y} - \boldsymbol{G\beta}$, and $\boldsymbol{Q} = \boldsymbol{C}^{-1}$. For each component of $\boldsymbol{\theta}_r$, $r = 1, \dots, d$, in this case, $\theta$ has 3 components ($\sigma^2, \eta, \tau^2$). The score of the log-likelihood becomes
-    \begin{equation*}
-        \frac{dl}{d\theta_r} = -\frac{1}{2}\text{trace}(\boldsymbol{Q}\frac{d\boldsymbol{C}}{d\theta_r}) + \frac{1}{2}\boldsymbol{z}^T\boldsymbol{Q}\frac{d\boldsymbol{C}}{d\theta_r}\boldsymbol{Qz}
-    \end{equation*}
-
-
- The above mentioned score can be solved iteratively using Fisher scoring algorithm. To achieve the numerical stability, the expected Hessian is applied, which is 
 \begin{equation*}
-        \mathop{E}(\frac{d^2l}{d\theta_rd\theta_{\bar{r}}}) = -\frac{1}{2}\text{trace}(\boldsymbol{Q}\frac{d\boldsymbol{C}}{d\theta_{\bar{r}}}\boldsymbol{Q}\frac{d\boldsymbol{C}}{d\theta_r})
+        p(\boldsymbol{x}) = \mathop{N}(\mu, \boldsymbol{\Sigma}), \quad p(\boldsymbol{y}|\boldsymbol{x}) = \mathop{N}(\boldsymbol{x}, \boldsymbol{\Sigma}+\boldsymbol{T})
+\end{equation*}
+Therefore, the marginal likelihood of the data is 
+\begin{equation*}
+        p(\boldsymbol{y}) = \mathop{N}(\boldsymbol{\mu}, \boldsymbol{C}), \quad \boldsymbol{C} = \boldsymbol{\Sigma} + \boldsymbol{T}, \quad \boldsymbol{T} = \tau^2 \boldsymbol{I}
+\end{equation*}
+
+The log-likelihood as a function of $\alpha$ and unknown fixed nuisance parameters $\boldsymbol{\theta}=(\sigma,\phi,\tau)$ in the prior covariance matrix $\boldsymbol{\Sigma} = \boldsymbol{\Sigma(\boldsymbol{\theta})}$, and/or the likelihood noise matrix $\boldsymbol{T} = \boldsymbol{T}(\boldsymbol{\theta})$ becomes
+\begin{equation*}
+      l(\boldsymbol{\theta}, \boldsymbol{\alpha}) = -\frac{N}{2} \log(2\pi) - \frac{1}{2}\log|\boldsymbol{C}| - \frac{1}{2}(\boldsymbol{y} - \boldsymbol{mu(\alpha)})^T\boldsymbol{C}^{-1}(\boldsymbol{y} - \boldsymbol{mu(\alpha)})
+\end{equation*}
+
+ The MLEs of $\boldsymbol{\alpha}$ and $\boldsymbol{\theta}$ are obtained by
+\begin{equation*}
+        (\hat{\boldsymbol{\alpha}}, \hat{\boldsymbol{\theta}}) = \underset{\boldsymbol{\alpha}, \boldsymbol{\theta}}{\arg\max}\{l(\boldsymbol{\alpha, \theta})\}
+\end{equation*}
+
+For fixed $\boldsymbol{\theta}$, the MLEs of $\boldsymbol{\beta}$ can be determined analytically.
+\begin{equation*}
+    \hat{\boldsymbol{\alpha}} = (\boldsymbol{\mu}^T\boldsymbol{C}^{-1}\boldsymbol{\mu})^{-1}\boldsymbol{\mu}^T\boldsymbol{C}^{-1}\boldsymbol{y}
+\end{equation*}
+Whereas for fixed $\boldsymbol{\alpha}$, the MLE of nuisance parameters $\boldsymbol{\theta}$ can be obtained by numerical maximization. Let $\boldsymbol{Z} = \boldsymbol{y} - \boldsymbol{\mu(\alpha)}$, and $\boldsymbol{Q} = \boldsymbol{C}^{-1}$. For each component of $\boldsymbol{\theta}_r$, $r = 1, \dots, d$, in this case, $\theta$ has 3 components ($\sigma, \eta, \tau$). The score of the log-likelihood becomes
+\begin{equation*}
+      \frac{dl}{d\theta_r} = -\frac{1}{2}\text{trace}(\boldsymbol{Q}\frac{d\boldsymbol{C}}{d\theta_r}) + \frac{1}{2}\boldsymbol{z}^T\boldsymbol{Q}\frac{d\boldsymbol{C}}{d\theta_r}\boldsymbol{QZ}
+\end{equation*}
+
+
+The above mentioned score can be solved iteratively using Fisher scoring algorithm. To achieve the numerical stability of the algorithm, the expected Hessian is applied, which is 
+\begin{equation*}
+      \mathop{E}(\frac{d^2l}{d\theta_rd\theta_{\bar{r}}}) = -\frac{1}{2}\text{trace}(\boldsymbol{Q}\frac{d\boldsymbol{C}}{d\theta_{\bar{r}}}\boldsymbol{Q}\frac{d\boldsymbol{C}}{d\theta_r})
 \end{equation*}
 
 The pseudo code for the Fisher scoring algorithm can then be  expressed as follows:
 \begin{algorithm}[H]
-     \KwData{initial $\beta_0$, $\theta_0$}
-     \KwResult{Converged $\hat{\beta}$, $\hat{\theta}$}
+     \KwData{initial $\alpha_0$, $\theta_0$}
+     \KwResult{Converged $\hat{\alpha}$, $\hat{\theta}$}
      \While{not converged}{
       $\boldsymbol{C} = \boldsymbol{C}(\boldsymbol{\theta}^b)$\;
-      $\boldsymbol{\beta}^{b+1} = [\boldsymbol{G}^T\boldsymbol{C}^{-1}\boldsymbol{G}]^{-1}\boldsymbol{G}^T\boldsymbol{C}^{-1}\boldsymbol{y}$\;
-      $\boldsymbol{z} = \boldsymbol{y} - \boldsymbol{G}\boldsymbol{\beta}^{b + 1}$\;
+      $\boldsymbol{\alpha}^{b+1} = [\boldsymbol{\mu}^T\boldsymbol{C}^{-1}\boldsymbol{\mu}]^{-1}\boldsymbol{\mu}^T\boldsymbol{C}^{-1}\boldsymbol{y}$\;
+      $\boldsymbol{Z} = \boldsymbol{y} - \boldsymbol{mu(\alpha^{b+1})}$\;
       $\boldsymbol{Q} = \boldsymbol{C}^{-1}$ \;
-      $\boldsymbol{C}^*_r = \frac{d\boldsymbol{C}(\boldsymbol{\theta}^b)}{d\theta_r}, \quad r = 1, \dots, d$ \;
-      $u_r = \frac{dl}{d\theta_r} = -\frac{1}{2}\text{trace}(\boldsymbol{Q}\boldsymbol{C}_r^*) + \frac{1}{2}\boldsymbol{z}^T\boldsymbol{Q}\boldsymbol{C}_r^*\boldsymbol{Qz}$\;
-      $\boldsymbol{V}_{r\bar{r}}=\mathop{E}(\frac{d^2l}{d\theta_rd\theta_{\bar{r}}}) = -\frac{1}{2}\text{trace}(\boldsymbol{Q}\boldsymbol{C}_r^*\boldsymbol{Q}\boldsymbol{C}_{\bar{r}}^*)$\;
-      $\boldsymbol{\theta}^{b + 1} = \boldsymbol{\theta}^b + \boldsymbol{V}^{-1}\boldsymbol{u}$\;
+      $\boldsymbol{dC}_r = \frac{d\boldsymbol{C}(\boldsymbol{\theta}^b)}{d\theta_r}, \quad r = 1, \dots, 3$ \;
+      $\boldsymbol{dl}_r = \frac{dl}{d\theta_r} = -\frac{1}{2}\text{trace}(\boldsymbol{Q}\boldsymbol{dC}_r) + \frac{1}{2}\boldsymbol{z}^T\boldsymbol{Q}\boldsymbol{dC}_r\boldsymbol{Qz}, \quad r = 1, \dots, 3$\;
+      $\boldsymbol{Hess}_{r,s}=\mathop{E}(\frac{d^2l}{d\theta_rd\theta_{\bar{r}}}) = -\frac{1}{2}\text{trace}(\boldsymbol{Q}\boldsymbol{dC}_r\boldsymbol{Q}\boldsymbol{dC}_{s}), \quad r,s = 1, \dots, 3$\;
+      $\boldsymbol{\theta}^{b + 1} = \boldsymbol{\theta}^b - \boldsymbol{Hess}^{-1}\boldsymbol{dl}$\;
       $b = b + 1$
       }
 \end{algorithm}
@@ -540,7 +533,7 @@ for (i in 1:iter){
 plot(likelihoods, type="l", main = "log likelihood convergence", xlab = "iteration", ylab = "log likelihood")
 ```
 
-We see that the parameter estimation comes closer to the true values as the initial guess, but does not fully hit them - however, in a probabilisitc framework we cannot expect more.
+We see that the parameter estimation comes closer to the true values as the initial guess, but does not fully hit them - however, in a probabilistic framework we cannot expect more. Whereas the likelihood converges very quickly.
 
 *** 
 
