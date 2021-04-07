@@ -346,18 +346,6 @@ plot(s[,1],s[,2], col = cols, cex=cexs, pch=4,
 In the observation plot, bigger crosses and brighter colors indicate higher observed values. Then we can see tendency towards greater values towards the upper right corner (as we would expect from the bias).
 
 
-### 2.1.1 Simulation using a grid
-
-To simulate from the grid discretisation, the $\boldsymbol{F}$ matrix is defined, which contains the information on where to sample. \ref{fig:SamplingMatrix} is a 25 $\times$ 25 demonstrates the sampling matrix for one step, i.e., the red indicates where it has sampled, therefore, it becomes 1 in the matrix, the rest are zeros. By having multiple steps, and vectorise each matrix to a long vector which is a m $\times$ N matrix, N is 625. The red grids are regions where it have sampled as shown in \ref{fig:FMatrix}. They are only illustration for the purpose of understanding of how this grid approach works. It has the benefit of improving the numerical stabilities since one grid can only contain one value. Otherwise, very close value might induce singularity in later inverse computations. 
-
-```{r Sampling matrix, echo=FALSE, fig.cap="\\label{fig:SamplingMatrix}Sampling design matrix in one step", out.width = '100%'}
-knitr::include_graphics("F.pdf")
-```
-```{r F matrix, echo=FALSE, fig.cap="\\label{fig:FMatrix}F matrix after 10 steps", out.width = '100%'}
-knitr::include_graphics("Fv.pdf")
-```
-
-
 ***
 
 ## 2.2 Paramter estimation
@@ -422,11 +410,10 @@ sigma = 1.5
 phi = 7.5
 tau = 0.1
 theta = c(sigma, phi, tau)
-# theta = matrix(c(sigma, phi, tau), ncol = 1)
 alpha = 0.5
 
 # optimization parameters
-tol = 1e-5          # value for absolute termination criterion
+tol = 1e-12          # value for absolute termination criterion
 l = Inf             # likelihood value
 l_old = 0           # likelihood value of previous iteration
 
@@ -513,7 +500,7 @@ ddldthetadtheta <- function(theta, C, Q){
 
 # parameter estimation loop
 # (nomenclature as in lecture)
-iter = 0
+iter = 1
 stats = list(c(iter, theta, alpha, l))
 while(abs(l-l_old)>tol){
   # current residual
@@ -546,7 +533,11 @@ print(paste("The estimate for phi   (true value 10.0) is ", round(stats[[iter]][
 print(paste("The estimate for tau   (true value 0.01) is ", round(stats[[iter]][4], digits=4)))
 print(paste("The estimate for alpha (true value  1.0) is ", round(stats[[iter]][5], digits=4)))
 
-
+likelihoods = rep(0,iter)
+for (i in 1:iter){
+  likelihoods[i] = stats[[i]][6]
+}
+plot(likelihoods, type="l", main = "log likelihood convergence", xlab = "iteration", ylab = "log likelihood")
 ```
 
 We see that the parameter estimation comes closer to the true values as the initial guess, but does not fully hit them - however, in a probabilisitc framework we cannot expect more.
@@ -564,10 +555,23 @@ We will now use the estimated model parameters to perform kriging prediction. Pr
 By depicting the posterior mean and covariance, one can find that Gaussian process model is suitable for predicting the field surface with relatively low mean squared error. 
 
 ```{r, kriging}
-# sigmah = stats[[iter]][2]
-# phih = stats[[iter]][3]
-# tauh = stats[[iter]][4]
-# alphah = stats[[iter]][5]
+sigma0 = stats[[1]][2]
+phi0 = stats[[1]][3]
+tau0 = stats[[1]][4]
+alpha0 = stats[[1]][5]
+
+
+sigmah = stats[[iter]][2]
+phih = stats[[iter]][3]
+tauh = stats[[iter]][4]
+alphah = stats[[iter]][5]
+
+
+mu_prior = alpha0 * mu
+
+# mu_posterior = mu_prior - C0 * C * (y - mu_prior)
+# Sigma_posterior = Sigma - C0 * C * C.T
+
 # betah = matrix(c(-alphah, alphah, alphah), ncol = 1)
 # Sigmah = Matern_cov(sigmah, phih, t) # estimated covariance matrix
 # Lh = t(chol(Sigmah)) # lower triangular matrix for the estimated covariance matrix
