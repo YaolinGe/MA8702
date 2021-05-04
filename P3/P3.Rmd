@@ -1,0 +1,48 @@
+---
+title: "P3"
+author: "Florian Bieser, Yaolin Ge"
+date: "5/4/2021"
+header-includes:
+  - \usepackage[]{algorithm2e}
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+  html_document:
+    toc: yes
+    toc_float: yes
+    code_download: yes
+    toc_depth: 3
+  ioslides_presentation: default
+  beamer_presentation:
+    slide_level: 1
+    keep_tex: yes
+---
+
+```{r setup, include=TRUE,echo=FALSE}
+suppressPackageStartupMessages(library(knitr))
+knitr::opts_chunk$set(echo = FALSE, message=FALSE,warning = FALSE, error = FALSE)
+```
+
+
+```{r particle filter}
+N = 50
+yA = read.csv("sensorA.txt")
+yB = read.csv("sensorB.txt")
+y = cbind(yA, yB)
+plot(yA)
+plot(yB)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

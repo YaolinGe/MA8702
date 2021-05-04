@@ -20,8 +20,8 @@ delD=1/60;
 A(1,3)=delD;
 A(2,4)=delD;
 % Initial pdfs
-mprior=[10;30;15;-15];
-sigprior=diag([5^2;5^2;3^2;3^2]);
+mprior=[10;30;10;-10];
+sigprior=diag([10^2;10^2;5^2;5^2]);
 SigPP=diag([0.1^2;0.1^2;0.7^2;0.7^2]);
 Sigeps=diag([0.087^2;0.087^2]);
 mprop=zeros(4,n);
@@ -95,7 +95,7 @@ xBupd=zeros(4,B);
 mm=zeros(4,n);
 mlow=zeros(4,n);
 mhigh=zeros(4,n);
-
+%%
 % Recursive estimation
 for i=1:n,
 
